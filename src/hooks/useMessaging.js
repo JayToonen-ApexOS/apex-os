@@ -28,15 +28,13 @@ export function useMessaging(user) {
 
     try {
       const messaging = await messagingPromise;
-      if (!messaging) return;
+      if (!messaging || !VAPID_KEY || VAPID_KEY === 'your_vapid_key_here') return;
 
-      const token = await getToken(messaging, {
-        vapidKey: VAPID_KEY,
-        serviceWorkerRegistration: await navigator.serviceWorker.getRegistration('/sw.js'),
-      });
+      const token = await getToken(messaging, { vapidKey: VAPID_KEY });
+      if (!token) return;
 
       // Sla token op in Firestore zodat de Cloud Function het kan gebruiken
-      if (user && token) {
+      if (user) {
         await setDoc(
           doc(db, 'users', user.uid, 'settings', 'fcm'),
           { token, updatedAt: new Date().toISOString() },
@@ -44,7 +42,8 @@ export function useMessaging(user) {
         );
       }
     } catch (err) {
-      console.error('[FCM] Token ophalen mislukt:', err);
+      // FCM is optioneel — app werkt door zonder pushmeldingen
+      console.warn('[FCM] Token ophalen mislukt (pushmeldingen niet beschikbaar):', err.message);
     }
   };
 
