@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useFirestoreCollection } from './hooks/useFirestoreCollection';
 import { useAuth } from './hooks/useAuth';
 import { useMessaging } from './hooks/useMessaging';
+import { getToken } from 'firebase/messaging';
+import { messagingPromise } from './firebase';
 import LoginScreen from './components/LoginScreen';
 import { 
   CheckCircle2, Circle, Sparkles, Target, FolderKanban, Bell,
@@ -115,6 +117,38 @@ export default function App() {
 
   // --- PUSH MELDINGEN ---
   const { permission: notifPermission, requestPermission, fcmToken } = useMessaging(user);
+
+  const [debugToken, setDebugToken] = useState('');
+  const [debugTokenLoading, setDebugTokenLoading] = useState(false);
+
+  const handleFetchDebugToken = async () => {
+    setDebugToken('');
+    setDebugTokenLoading(true);
+    try {
+      const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
+      if (!vapidKey || vapidKey === 'your_vapid_key_here') {
+        setDebugToken('FOUT: VITE_FIREBASE_VAPID_KEY is niet ingesteld in Vercel env vars.');
+        return;
+      }
+      const messaging = await messagingPromise;
+      if (!messaging) {
+        setDebugToken('FOUT: Firebase Messaging wordt niet ondersteund in deze browser.');
+        return;
+      }
+      let swReg = null;
+      if ('serviceWorker' in navigator) {
+        swReg = await navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' });
+      }
+      const tokenOptions = { vapidKey };
+      if (swReg) tokenOptions.serviceWorkerRegistration = swReg;
+      const token = await getToken(messaging, tokenOptions);
+      setDebugToken(token || 'Geen token ontvangen (controleer VAPID key en SW).');
+    } catch (err) {
+      setDebugToken('FOUT: ' + err.message);
+    } finally {
+      setDebugTokenLoading(false);
+    }
+  };
 
   // --- STATE ---
   const [activeTab, setActiveTab] = useState('hub');
@@ -2005,6 +2039,40 @@ export default function App() {
         </div>
 
       </div>
+
+      {/* DEBUG INFO */}
+      <div className="bg-zinc-900 rounded-3xl p-6 md:p-8 border border-zinc-800 shadow-xl">
+        <h3 className="font-bold text-xl text-zinc-100 mb-2 flex items-center gap-2">
+          <Info className="w-5 h-5 text-zinc-500"/> Debug Info
+        </h3>
+        <p className="text-zinc-500 mb-4 text-sm">Haal het FCM registration token op om een testmelding te sturen via Firebase Console.</p>
+        <button
+          onClick={handleFetchDebugToken}
+          disabled={debugTokenLoading}
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold bg-zinc-800 text-zinc-200 hover:bg-zinc-700 border border-zinc-700 disabled:opacity-50 transition-all"
+        >
+          {debugTokenLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bell className="w-4 h-4" />}
+          Toon FCM Token
+        </button>
+        {debugToken && (
+          <div className="mt-4 space-y-2">
+            <textarea
+              readOnly
+              value={debugToken}
+              rows={4}
+              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-xs text-zinc-300 font-mono outline-none resize-none"
+              onFocus={e => e.target.select()}
+            />
+            <button
+              onClick={() => navigator.clipboard.writeText(debugToken)}
+              className="text-xs font-bold text-cyan-400 hover:text-cyan-300 border border-cyan-500/40 rounded-lg px-3 py-1.5 transition-colors"
+            >
+              Kopieer token
+            </button>
+          </div>
+        )}
+      </div>
+
     </div>
   );
 
