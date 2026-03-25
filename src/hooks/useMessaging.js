@@ -44,6 +44,7 @@ export function useMessaging(user) {
 
       const token = await getToken(messaging, tokenOptions);
       if (!token) return;
+      console.log('[FCM] Registration token:', token);
 
       // Sla token op in Firestore zodat de Cloud Function het kan gebruiken
       if (user) {
