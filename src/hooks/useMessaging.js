@@ -1,0 +1,71 @@
+import { useState, useEffect } from 'react';
+import { getToken, onMessage } from 'firebase/messaging';
+import { doc, setDoc } from 'firebase/firestore';
+import { db, messagingPromise } from '../firebase';
+
+const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY;
+
+/**
+ * Hook voor Firebase Cloud Messaging.
+ * - Vraagt notification-toestemming op aanvraag
+ * - Slaat het FCM-token op in Firestore zodat de Cloud Function het kan ophalen
+ * - Luistert naar foreground-meldingen en toont ze zelf
+ *
+ * Returns: { permission, requestPermission }
+ */
+export function useMessaging(user) {
+  const [permission, setPermission] = useState(
+    'Notification' in window ? Notification.permission : 'denied'
+  );
+
+  // Vraag toestemming en haal FCM-token op
+  const requestPermission = async () => {
+    if (!('Notification' in window)) return;
+
+    const perm = await Notification.requestPermission();
+    setPermission(perm);
+    if (perm !== 'granted') return;
+
+    try {
+      const messaging = await messagingPromise;
+      if (!messaging) return;
+
+      const token = await getToken(messaging, {
+        vapidKey: VAPID_KEY,
+        serviceWorkerRegistration: await navigator.serviceWorker.getRegistration('/sw.js'),
+      });
+
+      // Sla token op in Firestore zodat de Cloud Function het kan gebruiken
+      if (user && token) {
+        await setDoc(
+          doc(db, 'users', user.uid, 'settings', 'fcm'),
+          { token, updatedAt: new Date().toISOString() },
+          { merge: true }
+        );
+      }
+    } catch (err) {
+      console.error('[FCM] Token ophalen mislukt:', err);
+    }
+  };
+
+  // Luister naar meldingen terwijl de app open is (foreground)
+  useEffect(() => {
+    if (permission !== 'granted') return;
+
+    let unsubscribe = () => {};
+
+    messagingPromise.then((messaging) => {
+      if (!messaging) return;
+      unsubscribe = onMessage(messaging, (payload) => {
+        // Firebase toont foreground-meldingen niet automatisch — doe het zelf
+        const title = payload.notification?.title ?? 'Apex OS';
+        const body  = payload.notification?.body  ?? '';
+        new Notification(title, { body, icon: '/favicon.svg' });
+      });
+    });
+
+    return () => unsubscribe();
+  }, [permission]);
+
+  return { permission, requestPermission };
+}
