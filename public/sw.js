@@ -42,21 +42,11 @@ self.addEventListener('fetch', (event) => {
   // Sla niet-HTTP requests over (bijv. chrome-extension://)
   if (!url.protocol.startsWith('http')) return;
 
-  // Externe API's (weer, Firestore) → Network-first, cache als fallback
-  const isExternalApi =
-    url.hostname !== self.location.hostname ||
-    url.pathname.startsWith('/__/') ||
-    url.pathname.includes('firestore') ||
-    url.hostname.includes('open-meteo') ||
-    url.hostname.includes('googleapis') ||
-    url.hostname.includes('gstatic');
-
-  if (isExternalApi) {
-    event.respondWith(
-      fetch(event.request).catch(() => caches.match(event.request))
-    );
-    return;
-  }
+  // Laat alle externe requests volledig ongemoeid — GEEN respondWith aanroepen.
+  // Firestore gebruikt streaming/WebSocket verbindingen die kapot gaan als de
+  // SW ze onderschept. caches.match() geeft undefined terug voor onbekende
+  // requests, wat de "Returned response is null" fout veroorzaakt.
+  if (url.hostname !== self.location.hostname) return;
 
   // App-shell & static assets → Cache-first, update op achtergrond
   event.respondWith(
