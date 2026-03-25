@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getToken, onMessage } from 'firebase/messaging';
 import { doc, setDoc } from 'firebase/firestore';
-import { db, messagingPromise, VAPID_KEY } from '../firebase';
+import { db } from '../firebase';
+import { getMessagingInstance, getToken, onMessage, VAPID_KEY } from '../messaging';
 
 export function useMessaging(user) {
   const [permission, setPermission] = useState(
@@ -12,8 +12,10 @@ export function useMessaging(user) {
   // Haal het FCM-token op en sla het op in Firestore
   const fetchToken = useCallback(async (currentUser) => {
     try {
-      const messaging = await messagingPromise;
-      if (!messaging || !VAPID_KEY || VAPID_KEY === 'your_vapid_key_here') return;
+      if (!VAPID_KEY) return;
+
+      const messaging = await getMessagingInstance();
+      if (!messaging) return;
 
       let swReg = null;
       if ('serviceWorker' in navigator) {
@@ -61,13 +63,13 @@ export function useMessaging(user) {
     await fetchToken(user);
   };
 
-  // Luister naar foreground-meldingen
+  // Luister naar foreground-meldingen (lazy — messaging pas laden als nodig)
   useEffect(() => {
     if (permission !== 'granted') return;
 
     let unsubscribe = () => {};
 
-    messagingPromise.then((messaging) => {
+    getMessagingInstance().then((messaging) => {
       if (!messaging) return;
       unsubscribe = onMessage(messaging, (payload) => {
         const title = payload.notification?.title ?? 'Apex OS';
