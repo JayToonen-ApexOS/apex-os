@@ -30,7 +30,19 @@ export function useMessaging(user) {
       const messaging = await messagingPromise;
       if (!messaging || !VAPID_KEY || VAPID_KEY === 'your_vapid_key_here') return;
 
-      const token = await getToken(messaging, { vapidKey: VAPID_KEY });
+      // Registreer de FCM-specifieke service worker expliciet zodat Firebase
+      // deze gebruikt voor push (en NIET de algemene sw.js die Firestore blokkeert)
+      let swReg = null;
+      if ('serviceWorker' in navigator) {
+        swReg = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+          scope: '/',
+        });
+      }
+
+      const tokenOptions = { vapidKey: VAPID_KEY };
+      if (swReg) tokenOptions.serviceWorkerRegistration = swReg;
+
+      const token = await getToken(messaging, tokenOptions);
       if (!token) return;
 
       // Sla token op in Firestore zodat de Cloud Function het kan gebruiken
