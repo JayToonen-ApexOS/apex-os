@@ -114,7 +114,7 @@ export default function App() {
   const uid = user?.uid ?? null;
 
   // --- PUSH MELDINGEN ---
-  const { permission: notifPermission, requestPermission } = useMessaging(user);
+  const { permission: notifPermission, requestPermission, fcmToken } = useMessaging(user);
 
   // --- STATE ---
   const [activeTab, setActiveTab] = useState('hub');
@@ -1977,6 +1977,31 @@ export default function App() {
               ))}
             </div>
           </div>
+
+          {/* FCM DEBUG TOKEN */}
+          {fcmToken && (
+            <div className="bg-zinc-900 rounded-3xl p-6 md:p-8 border border-zinc-800 shadow-xl w-full">
+              <h3 className="font-bold text-xl text-zinc-100 mb-2 flex items-center gap-2">
+                <Bell className="w-5 h-5 text-cyan-500"/> Push Token
+              </h3>
+              <p className="text-zinc-400 mb-4 text-sm leading-relaxed">Kopieer deze token om een testmelding te sturen via Firebase Console → Cloud Messaging.</p>
+              <div className="flex gap-2">
+                <input
+                  readOnly
+                  value={fcmToken}
+                  className="flex-1 bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-xs text-zinc-400 font-mono outline-none truncate"
+                  onFocus={e => e.target.select()}
+                />
+                <button
+                  onClick={() => navigator.clipboard.writeText(fcmToken)}
+                  className="shrink-0 px-4 py-3 rounded-xl text-xs font-bold bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 border border-cyan-500/30 transition-all"
+                >
+                  Kopieer
+                </button>
+              </div>
+            </div>
+          )}
+
         </div>
 
       </div>

@@ -17,6 +17,7 @@ export function useMessaging(user) {
   const [permission, setPermission] = useState(
     'Notification' in window ? Notification.permission : 'denied'
   );
+  const [fcmToken, setFcmToken] = useState(null);
 
   // Vraag toestemming en haal FCM-token op
   const requestPermission = async () => {
@@ -45,6 +46,7 @@ export function useMessaging(user) {
       const token = await getToken(messaging, tokenOptions);
       if (!token) return;
       console.log('[FCM] Registration token:', token);
+      setFcmToken(token);
 
       // Sla token op in Firestore zodat de Cloud Function het kan gebruiken
       if (user) {
@@ -79,5 +81,5 @@ export function useMessaging(user) {
     return () => unsubscribe();
   }, [permission]);
 
-  return { permission, requestPermission };
+  return { permission, requestPermission, fcmToken };
 }
