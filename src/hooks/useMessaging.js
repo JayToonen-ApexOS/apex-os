@@ -1,9 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getToken, onMessage } from 'firebase/messaging';
 import { doc, setDoc } from 'firebase/firestore';
-import { db, messagingPromise } from '../firebase';
-
-const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY;
+import { db, messagingPromise, VAPID_KEY } from '../firebase';
 
 export function useMessaging(user) {
   const [permission, setPermission] = useState(
