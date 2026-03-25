@@ -1945,22 +1945,27 @@ export default function App() {
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #3f3f46; border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: #52525b; }
-        @keyframes scan { 
-          0% { transform: translateY(-100%); opacity: 0; } 
-          10% { opacity: 1; } 
-          90% { opacity: 1; } 
-          100% { transform: translateY(400px); opacity: 0; } 
+        @keyframes scan {
+          0% { transform: translateY(-100%); opacity: 0; }
+          10% { opacity: 1; }
+          90% { opacity: 1; }
+          100% { transform: translateY(400px); opacity: 0; }
         }
+        .safe-top { padding-top: env(safe-area-inset-top); }
+        .pt-safe-main { padding-top: calc(4rem + env(safe-area-inset-top)); }
+        .pb-safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
       `}} />
 
       {/* MOBILE MENU BAR */}
-      <div className={`lg:hidden fixed top-0 left-0 right-0 h-16 backdrop-blur-xl border-b z-40 flex items-center justify-between px-6 transition-colors duration-1000 ${isYasminMode ? 'bg-[#140824]/80 border-purple-900/30' : 'bg-zinc-950/80 border-zinc-800'}`}>
-        <div className="flex items-center gap-2 font-black tracking-widest text-lg">
-          <Triangle className={`${isYasminMode ? 'text-purple-400 fill-purple-400' : 'text-cyan-400 fill-cyan-400'}`} /> APEX
+      <div className={`lg:hidden fixed top-0 left-0 right-0 backdrop-blur-xl border-b z-40 flex flex-col transition-colors duration-1000 safe-top ${isYasminMode ? 'bg-[#140824]/90 border-purple-900/30' : 'bg-zinc-950/90 border-zinc-800'}`}>
+        <div className="h-16 flex items-center justify-between px-6">
+          <div className="flex items-center gap-2 font-black tracking-widest text-lg">
+            <Triangle className={`w-5 h-5 ${isYasminMode ? 'text-purple-400 fill-purple-400' : 'text-cyan-400 fill-cyan-400'}`} /> APEX
+          </div>
+          <button onClick={() => setIsMobileMenuOpen(true)} className={`p-2 rounded-xl border ${isYasminMode ? 'text-purple-300 bg-[#2d1b4e] border-purple-800' : 'text-zinc-300 bg-zinc-900 border-zinc-800'}`}>
+            <Menu className="w-5 h-5" />
+          </button>
         </div>
-        <button onClick={() => setIsMobileMenuOpen(true)} className={`p-2 rounded-xl border ${isYasminMode ? 'text-purple-300 bg-[#2d1b4e] border-purple-800' : 'text-zinc-300 bg-zinc-900 border-zinc-800'}`}>
-          <Menu className="w-5 h-5" />
-        </button>
       </div>
 
       {isMobileMenuOpen && (
@@ -1994,9 +1999,9 @@ export default function App() {
       </div>
 
       {/* MAIN CONTENT AREA */}
-      <div className={`flex-1 flex flex-col h-full relative overflow-hidden pt-16 lg:pt-0 ${isYasminMode ? 'bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-[#2d1b4e] via-[#140824] to-[#140824]' : ''}`}>
+      <div className={`flex-1 flex flex-col h-full relative overflow-hidden pt-safe-main lg:pt-0 ${isYasminMode ? 'bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-[#2d1b4e] via-[#140824] to-[#140824]' : ''}`}>
         
-        <main ref={scrollContainerRef} className="flex-1 overflow-y-auto p-4 sm:p-8 lg:p-10 scroll-smooth relative custom-scrollbar pb-40 md:pb-48">
+        <main ref={scrollContainerRef} className="flex-1 overflow-y-auto p-4 sm:p-8 lg:p-10 scroll-smooth relative custom-scrollbar pb-56 lg:pb-32">
           <div className="max-w-6xl mx-auto w-full flex flex-col min-h-full">
             {activeTab === 'hub' && renderHub()}
             {activeTab === 'agenda' && renderAgenda()}
@@ -2103,7 +2108,7 @@ export default function App() {
         </main>
 
         {/* COMMAND BAR */}
-        <div className="absolute bottom-6 left-0 right-0 z-50 px-4 md:px-8 pointer-events-none flex justify-center">
+        <div className="absolute bottom-24 lg:bottom-6 left-0 right-0 z-50 px-4 md:px-8 pointer-events-none flex justify-center">
           <form onSubmit={handleAISubmit} className="w-full max-w-2xl pointer-events-auto relative">
             {lastAction && (
               <div className="absolute bottom-[calc(100%+12px)] left-1/2 -translate-x-1/2 text-sm font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 backdrop-blur-xl px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 animate-in slide-in-from-bottom-2 shadow-2xl z-[60] whitespace-nowrap">
@@ -2128,6 +2133,32 @@ export default function App() {
           </form>
         </div>
 
+      </div>
+
+      {/* MOBILE BOTTOM NAV */}
+      <div className={`lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t backdrop-blur-xl flex flex-col transition-colors duration-1000 pb-safe-bottom ${isYasminMode ? 'bg-[#140824]/95 border-purple-900/30' : 'bg-zinc-950/95 border-zinc-800'}`}>
+        <div className="flex items-center h-16">
+          {[
+            { id: 'hub',      icon: <Command className="w-5 h-5" />,   label: 'Hub'      },
+            { id: 'agenda',   icon: <Calendar className="w-5 h-5" />,  label: 'Agenda'   },
+            { id: 'forge',    icon: <Dumbbell className="w-5 h-5" />,  label: 'Forge'    },
+            { id: 'focus',    icon: <Timer className="w-5 h-5" />,     label: 'Focus'    },
+            { id: 'settings', icon: <Settings className="w-5 h-5" />,  label: 'Settings' },
+          ].map(({ id, icon, label }) => (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id)}
+              className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 text-[10px] font-bold uppercase tracking-wider transition-colors ${
+                activeTab === id
+                  ? (isYasminMode ? 'text-purple-400' : 'text-cyan-400')
+                  : (isYasminMode ? 'text-purple-300/40 hover:text-purple-300/70' : 'text-zinc-600 hover:text-zinc-400')
+              }`}
+            >
+              {icon}
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* MODAL / POPUP VOOR AGENDAPUNTEN */}
