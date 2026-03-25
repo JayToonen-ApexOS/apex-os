@@ -20,7 +20,7 @@ firebase.initializeApp({
   projectId:         'apexos-a0163',
   storageBucket:     'apexos-a0163.firebasestorage.app',
   messagingSenderId: '464345495611',
-  appId:             '1:464345495611:web:cc3b1010b7dfc0d9c7041enp',
+  appId:             '1:464345495611:web:cc3b1010b7dfc0d9c7041e',
 });
 
 const messaging = firebase.messaging();

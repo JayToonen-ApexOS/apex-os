@@ -2073,21 +2073,6 @@ export default function App() {
         )}
       </div>
 
-      <div className="bg-zinc-900 rounded-3xl p-6 border border-zinc-800 mt-6">
-        <h3 className="font-bold text-zinc-100 mb-4">Debug: FCM Token</h3>
-        <button
-          onClick={async () => {
-            const {getToken} = await import('firebase/messaging');
-            const {messagingPromise} = await import('./firebase');
-            const messaging = await messagingPromise;
-            const token = await getToken(messaging, {vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY});
-            alert(token);
-          }}
-          className="bg-zinc-800 text-zinc-200 px-4 py-2 rounded-xl"
-        >
-          Toon FCM Token
-        </button>
-      </div>
 
     </div>
   );
