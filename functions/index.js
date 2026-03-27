@@ -137,10 +137,17 @@ async function runBriefing() {
     let agendaLines = 'Geen afspraken vandaag.';
     let trainingLine = 'Geen training gepland.';
     if (uid) {
+      // Debug: log alle events om datumformaat te controleren
+      const allEventsSnap = await db.collection(`users/${uid}/agendaEvents`).get();
+      console.log(`[debug] Totaal events in Firestore voor uid=${uid}: ${allEventsSnap.size}`);
+      allEventsSnap.docs.forEach((d) => console.log('[debug] event:', JSON.stringify(d.data())));
+
+      // Gefilterde query op vandaag
       const eventsSnap = await db
         .collection(`users/${uid}/agendaEvents`)
         .where('date', '==', today)
         .get();
+      console.log(`[debug] Events voor vandaag (${today}): ${eventsSnap.size}`);
       const events = eventsSnap.docs.map((d) => d.data());
       const normalEvents = events.filter((e) => !isTrainingEvent(e));
       const training = events.find(isTrainingEvent);
