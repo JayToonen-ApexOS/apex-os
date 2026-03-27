@@ -1,36 +1,57 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 
 export function useFirestoreDocument(docPath, initialValue = {}) {
   const [state, setState] = useState(initialValue);
-  const [loaded, setLoaded] = useState(false);
+  const docPathRef = useRef(docPath);
+  const isRemoteUpdate = useRef(false);
+  const hasLoaded = useRef(false);
 
   useEffect(() => {
-    if (!docPath) { setState(initialValue); return; }
+    docPathRef.current = docPath;
+  }, [docPath]);
+
+  // Listen to Firestore changes
+  useEffect(() => {
+    if (!docPath) {
+      setState(initialValue);
+      return;
+    }
+
     const ref = doc(db, docPath);
     const unsubscribe = onSnapshot(ref, (snap) => {
       if (snap.exists()) {
-        setState(prev => ({ ...initialValue, ...prev, ...snap.data() }));
+        isRemoteUpdate.current = true;
+        setState({ ...initialValue, ...snap.data() });
+        hasLoaded.current = true;
+      } else {
+        hasLoaded.current = true;
       }
-      setLoaded(true);
+    }, (error) => {
+      console.error('useFirestoreDocument listener error:', error);
     });
+
     return unsubscribe;
   }, [docPath]);
 
-  const setValue = useCallback(async (newValueOrUpdater) => {
+  const setValue = async (newValueOrUpdater) => {
+    const currentPath = docPathRef.current;
+    if (!currentPath) return;
+
     setState(prev => {
       const newValue = typeof newValueOrUpdater === 'function'
         ? newValueOrUpdater(prev)
         : newValueOrUpdater;
-      if (docPath) {
-        setDoc(doc(db, docPath), newValue, { merge: true }).catch(e =>
-          console.error('Firestore write error:', e)
-        );
-      }
+
+      // Write to Firestore immediately, outside of setState
+      setDoc(doc(db, currentPath), newValue, { merge: true })
+        .then(() => console.log('Firestore write OK:', currentPath, newValue))
+        .catch(e => console.error('Firestore write FAILED:', currentPath, e));
+
       return newValue;
     });
-  }, [docPath]);
+  };
 
-  return [state, setValue, loaded];
+  return [state, setValue];
 }
