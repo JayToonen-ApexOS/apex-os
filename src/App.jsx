@@ -525,28 +525,36 @@ export default function App() {
       setAgendaEvents(prevAgenda => {
         let splits = workoutSplit.split('/').map(s => s.trim()).filter(Boolean);
         if (splits.length === 0) splits = ['Full Body'];
-        
+
+        // Local helper: matches any training event including manually added split-named events
+        const isOccupiedByTraining = (e) => {
+          if (e.type === 'Training') return true;
+          const t = (e.title ?? '').toLowerCase();
+          const splitKeywords = splits.map(s => s.toLowerCase());
+          return splitKeywords.some(k => t.includes(k)) || /gym|workout|sport|full body/.test(t);
+        };
+
         const now = new Date();
-        const currentDayOfWeek = now.getDay() === 0 ? 7 : now.getDay(); 
+        const currentDayOfWeek = now.getDay() === 0 ? 7 : now.getDay();
         const currentWeekDates = [];
         for (let i = 1; i <= 7; i++) {
-          const d = new Date(now); 
+          const d = new Date(now);
           d.setDate(now.getDate() - currentDayOfWeek + i);
-          const offset = d.getTimezoneOffset(); 
+          const offset = d.getTimezoneOffset();
           currentWeekDates.push(new Date(d.getTime() - (offset*60*1000)).toISOString().split('T')[0]);
         }
-        
+
         const todayIndex = currentDayOfWeek - 1;
         const futureWeekDates = currentWeekDates.slice(todayIndex);
-        
+
         const cleanedAgenda = prevAgenda.filter(e => !(e.isAI && futureWeekDates.includes(e.date)));
-        const daysWithFixedTraining = cleanedAgenda.filter(e => isTrainingEvent(e, workoutSplit) && currentWeekDates.includes(e.date)).map(e => e.date);
+        const daysWithFixedTraining = cleanedAgenda.filter(e => isOccupiedByTraining(e) && currentWeekDates.includes(e.date)).map(e => e.date);
         const neededTrainings = Math.max(0, trainingDaysPerWeek - new Set(daysWithFixedTraining).size);
-        
-        if (neededTrainings === 0) return cleanedAgenda; 
-        
+
+        if (neededTrainings === 0) return cleanedAgenda;
+
         let availableDays = futureWeekDates.filter(date => !daysWithFixedTraining.includes(date)).map(date => {
-            const eventsOnDay = cleanedAgenda.filter(e => e.date === date && !isTrainingEvent(e, workoutSplit) && !e.isAI);
+            const eventsOnDay = cleanedAgenda.filter(e => e.date === date && !isOccupiedByTraining(e) && !e.isAI);
             return { date, eventsOnDay, score: eventsOnDay.length };
           });
           
