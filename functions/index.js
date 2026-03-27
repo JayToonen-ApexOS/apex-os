@@ -69,117 +69,135 @@ function httpsGet(url) {
   });
 }
 
+const TEST_EMAIL = 'j.toonen04@gmail.com';
+
 async function runBriefing() {
-    // Verify env vars are loaded
-    console.log('[morningBriefing] GMAIL_USER:', process.env.GMAIL_USER);
-    console.log('[morningBriefing] GMAIL_APP_PASSWORD length:', process.env.GMAIL_APP_PASSWORD?.length ?? 0);
+  console.log('[briefing] START');
+  console.log('[briefing] GMAIL_USER:', process.env.GMAIL_USER);
+  console.log('[briefing] GMAIL_APP_PASSWORD length:', process.env.GMAIL_APP_PASSWORD?.length ?? 0);
 
-    const transporter = createTransporter();
+  const transporter = createTransporter();
 
-    // Haal alle users op
-    const usersSnap = await db.collection('users').get();
-    if (usersSnap.empty) return null;
+  // Verify SMTP credentials before doing anything else
+  try {
+    await transporter.verify();
+    console.log('[briefing] SMTP verify OK');
+  } catch (verifyErr) {
+    console.error('[briefing] SMTP verify FOUT:', verifyErr.message);
+    return;
+  }
 
-    // Vandaag in YYYY-MM-DD formaat (Amsterdam-tijd)
-    const now = new Date();
-    const formatter = new Intl.DateTimeFormat('en-CA', {
-      timeZone: 'Europe/Amsterdam',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    });
-    const today = formatter.format(now);
+  // Vandaag in YYYY-MM-DD formaat (Amsterdam-tijd)
+  const now = new Date();
+  const today = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Amsterdam',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(now);
+  console.log('[briefing] today:', today);
 
-    // Haal weer op via Open-Meteo
-    let weatherLine = '';
-    try {
-      const data = await httpsGet(
-        'https://api.open-meteo.com/v1/forecast' +
-        '?latitude=52.37&longitude=4.9&current_weather=true&timezone=Europe%2FAmsterdam'
-      );
-      const temp = Math.round(data.current_weather.temperature);
-      const desc = weatherCodeToText(data.current_weather.weathercode);
-      weatherLine = `${temp}°C — ${desc}`;
-    } catch (e) {
-      console.warn('Weer ophalen mislukt:', e.message);
-    }
+  // Haal weer op via Open-Meteo
+  let weatherLine = '';
+  try {
+    const data = await httpsGet(
+      'https://api.open-meteo.com/v1/forecast' +
+      '?latitude=52.37&longitude=4.9&current_weather=true&timezone=Europe%2FAmsterdam'
+    );
+    const temp = Math.round(data.current_weather.temperature);
+    const desc = weatherCodeToText(data.current_weather.weathercode);
+    weatherLine = `${temp}°C — ${desc}`;
+    console.log('[briefing] weer:', weatherLine);
+  } catch (e) {
+    console.warn('[briefing] weer ophalen mislukt:', e.message);
+  }
 
-    // Stuur e-mail aan elke user
-    const sends = usersSnap.docs.map(async (userDoc) => {
-      const uid = userDoc.id;
+  // Haal alle users op uit Firestore
+  const usersSnap = await db.collection('users').get();
+  console.log('[briefing] users gevonden:', usersSnap.size);
+  if (usersSnap.empty) {
+    console.warn('[briefing] Geen users in Firestore — stuur test-mail naar', TEST_EMAIL);
+  }
 
-      // E-mailadres ophalen uit Firebase Auth
-      let email;
+  // Bepaal de lijst van ontvangers: gebruikers uit Firestore + altijd TEST_EMAIL als fallback
+  const uids = usersSnap.empty ? [null] : usersSnap.docs.map((d) => d.id);
+
+  const sends = uids.map(async (uid) => {
+    // E-mailadres ophalen
+    let email = TEST_EMAIL;
+    if (uid) {
       try {
         const authUser = await getAuth().getUser(uid);
-        email = authUser.email;
+        email = authUser.email || TEST_EMAIL;
       } catch (e) {
-        console.warn(`[morningBriefing] Geen Auth-gebruiker voor uid=${uid}:`, e.message);
-        return;
+        console.warn(`[briefing] Auth lookup mislukt voor uid=${uid}:`, e.message);
       }
-      if (!email) return;
+    }
+    console.log('[briefing] ontvanger:', email, uid ? `(uid=${uid})` : '(fallback)');
 
-      // Agenda-events van vandaag ophalen
+    // Agenda-events van vandaag
+    let agendaLines = 'Geen afspraken vandaag.';
+    let trainingLine = 'Geen training gepland.';
+    if (uid) {
       const eventsSnap = await db
         .collection(`users/${uid}/agendaEvents`)
         .where('date', '==', today)
         .get();
-
       const events = eventsSnap.docs.map((d) => d.data());
       const normalEvents = events.filter((e) => !isTrainingEvent(e));
       const training = events.find(isTrainingEvent);
-
-      // E-mail opbouwen
-      const agendaLines = normalEvents.length > 0
-        ? normalEvents.map((e) => `• ${e.time ? e.time + ' ' : ''}${e.title}`).join('\n')
-        : 'Geen afspraken vandaag.';
-
-      const trainingLine = training
-        ? `\n💪 Training: ${training.title}`
-        : '\nGeen training gepland.';
-
-      const textBody = [
-        `Goedemorgen! Hier is je Apex OS briefing voor ${today}.`,
-        '',
-        weatherLine ? `🌡️ Weer: ${weatherLine}` : '',
-        '',
-        '📅 Agenda vandaag:',
-        agendaLines,
-        trainingLine,
-        '',
-        '— Apex OS',
-      ].filter((l) => l !== null).join('\n');
-
-      const htmlBody = `
-        <div style="font-family:sans-serif;max-width:480px;margin:0 auto;color:#1a1a1a">
-          <h2 style="margin-bottom:4px">☀️ Goedemorgen</h2>
-          <p style="color:#666;margin-top:0">${today}</p>
-          ${weatherLine ? `<p>🌡️ ${weatherLine}</p>` : ''}
-          <hr style="border:none;border-top:1px solid #eee;margin:16px 0"/>
-          <h3 style="margin-bottom:8px">📅 Agenda vandaag</h3>
-          <pre style="font-family:sans-serif;white-space:pre-wrap;margin:0">${agendaLines}</pre>
-          <p>${trainingLine.trim()}</p>
-          <hr style="border:none;border-top:1px solid #eee;margin:16px 0"/>
-          <p style="color:#999;font-size:12px">Apex OS — automatische briefing</p>
-        </div>
-      `;
-
-      console.log(`[morningBriefing] Versturen naar: ${email}`);
-      try {
-        const info = await transporter.sendMail({
-          from: `"Apex OS" <${process.env.GMAIL_USER}>`,
-          to: email,
-          subject: `☀️ Apex OS Briefing — ${today}`,
-          text: textBody,
-          html: htmlBody,
-        });
-        console.log(`[morningBriefing] E-mail verstuurd naar ${email} — response: ${info.response}`);
-      } catch (mailErr) {
-        console.error(`[morningBriefing] sendMail FOUT voor ${email}:`, mailErr.message, mailErr.code || '');
+      if (normalEvents.length > 0) {
+        agendaLines = normalEvents.map((e) => `• ${e.time ? e.time + ' ' : ''}${e.title}`).join('\n');
       }
-    });
+      if (training) trainingLine = `💪 Training: ${training.title}`;
+      console.log(`[briefing] events: ${events.length} totaal, ${normalEvents.length} normaal`);
+    }
 
-    await Promise.allSettled(sends);
+    const subject = `☀️ Apex OS Briefing — ${today}`;
+    const textBody = [
+      `Goedemorgen! Apex OS briefing voor ${today}.`,
+      '',
+      weatherLine ? `🌡️ Weer: ${weatherLine}` : '',
+      '',
+      '📅 Agenda vandaag:',
+      agendaLines,
+      '',
+      trainingLine,
+      '',
+      '— Apex OS',
+    ].join('\n');
+
+    const htmlBody = `
+      <div style="font-family:sans-serif;max-width:480px;margin:0 auto;color:#1a1a1a">
+        <h2 style="margin-bottom:4px">☀️ Goedemorgen</h2>
+        <p style="color:#666;margin-top:0">${today}</p>
+        ${weatherLine ? `<p>🌡️ ${weatherLine}</p>` : ''}
+        <hr style="border:none;border-top:1px solid #eee;margin:16px 0"/>
+        <h3 style="margin-bottom:8px">📅 Agenda vandaag</h3>
+        <pre style="font-family:sans-serif;white-space:pre-wrap;margin:0">${agendaLines}</pre>
+        <p>${trainingLine}</p>
+        <hr style="border:none;border-top:1px solid #eee;margin:16px 0"/>
+        <p style="color:#999;font-size:12px">Apex OS — automatische briefing</p>
+      </div>
+    `;
+
+    try {
+      const info = await transporter.sendMail({
+        from: `"Apex OS" <${process.env.GMAIL_USER}>`,
+        to: email,
+        subject,
+        text: textBody,
+        html: htmlBody,
+      });
+      console.log('[briefing] sendMail OK naar', email, '— response:', info.response);
+    } catch (mailErr) {
+      console.error('[briefing] sendMail FOUT naar', email);
+      console.error('[briefing] error message:', mailErr.message);
+      console.error('[briefing] error code:', mailErr.code);
+      console.error('[briefing] error response:', mailErr.response);
+    }
+  });
+
+  await Promise.allSettled(sends);
+  console.log('[briefing] DONE');
 }
 
 exports.morningBriefingV1 = functions
