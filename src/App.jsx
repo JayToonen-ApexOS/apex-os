@@ -122,7 +122,8 @@ export default function App() {
   const [quoteIndex, setQuoteIndex] = useState(0);
   
   // Yasmin Mode
-  const [isYasminMode, setIsYasminMode] = useState(false);
+  const isYasminMode = uiSettings.isYasminMode;
+  const setIsYasminMode = (v) => setUiSettings(prev => ({ ...prev, isYasminMode: v }));
   
   // Refs
   const scrollContainerRef = useRef(null);
@@ -136,19 +137,27 @@ export default function App() {
   const [projects, setProjects] = useFirestoreCollection(uid ? `users/${uid}/projects` : null, initialProjects);
   const [habits, setHabits] = useFirestoreCollection(uid ? `users/${uid}/habits` : null, initialHabits);
   const [goals, setGoals] = useFirestoreCollection(uid ? `users/${uid}/goals` : null, initialGoals);
-  const [scratchpad, setScratchpad] = useState("");
+  const [uiSettings, setUiSettings] = useFirestoreDocument(uid ? `users/${uid}/settings/ui` : null, { isYasminMode: false, scratchpad: '' });
+  const scratchpad = uiSettings.scratchpad;
+  const setScratchpad = (v) => setUiSettings(prev => ({ ...prev, scratchpad: typeof v === 'function' ? v(prev.scratchpad) : v }));
   
   // Logbook State
   const [logs, setLogs] = useFirestoreCollection(uid ? `users/${uid}/logs` : null, initialLogs);
   const [newLogText, setNewLogText] = useState('');
   const [newLogMood, setNewLogMood] = useState('good');
 
-  // Forge / Health State
-  const [healthStats, setHealthStats] = useState({ weight: '75', height: '180' });
-  const [trainingGoal, setTrainingGoal] = useState('Spieropbouw (Bulk)');
-  const [workoutSplit, setWorkoutSplit] = useState('Push / Pull / Legs');
-  const [trainingDaysPerWeek, setTrainingDaysPerWeek] = useState(3);
-  const [autoScheduleTrainings, setAutoScheduleTrainings] = useState(true);
+  // Forge / Health State — persisted to Firestore
+  const [forgeSettings, setForgeSettings] = useFirestoreDocument(uid ? `users/${uid}/settings/forge` : null, { weight: '75', height: '180', trainingGoal: 'Spieropbouw (Bulk)', workoutSplit: 'Push / Pull / Legs', trainingDaysPerWeek: 3, autoScheduleTrainings: true });
+  const healthStats = { weight: forgeSettings.weight, height: forgeSettings.height };
+  const setHealthStats = (val) => setForgeSettings(prev => ({ ...prev, ...(typeof val === 'function' ? val(prev) : val) }));
+  const trainingGoal = forgeSettings.trainingGoal;
+  const setTrainingGoal = (v) => setForgeSettings(prev => ({ ...prev, trainingGoal: v }));
+  const workoutSplit = forgeSettings.workoutSplit;
+  const setWorkoutSplit = (v) => setForgeSettings(prev => ({ ...prev, workoutSplit: v }));
+  const trainingDaysPerWeek = forgeSettings.trainingDaysPerWeek;
+  const setTrainingDaysPerWeek = (v) => setForgeSettings(prev => ({ ...prev, trainingDaysPerWeek: v }));
+  const autoScheduleTrainings = forgeSettings.autoScheduleTrainings;
+  const setAutoScheduleTrainings = (v) => setForgeSettings(prev => ({ ...prev, autoScheduleTrainings: v }));
   const [currentSession, setCurrentSession] = useState('');
   
   // Nutrition State
@@ -200,14 +209,11 @@ export default function App() {
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
-  const [connectedAgendas, setConnectedAgendas] = useFirestoreDocument(
-    uid ? `users/${uid}/settings/agendaConnections` : null,
-    { Google: false, Apple: false, Outlook: false, 'Andere Agenda': false }
-  );
-  const [agendaUrls, setAgendaUrls] = useFirestoreDocument(
-    uid ? `users/${uid}/settings/agendaUrls` : null,
-    { Apple: '', 'Andere Agenda': '' }
-  );
+  const [agendaSettings, setAgendaSettings] = useFirestoreDocument(uid ? `users/${uid}/settings/agenda` : null, { connectedAgendas: { Google: false, Apple: false, Outlook: false, 'Andere Agenda': false }, agendaUrls: { Apple: '', 'Andere Agenda': '' } });
+  const connectedAgendas = agendaSettings.connectedAgendas;
+  const setConnectedAgendas = (v) => setAgendaSettings(prev => ({ ...prev, connectedAgendas: typeof v === 'function' ? v(prev.connectedAgendas) : v }));
+  const agendaUrls = agendaSettings.agendaUrls;
+  const setAgendaUrls = (v) => setAgendaSettings(prev => ({ ...prev, agendaUrls: typeof v === 'function' ? v(prev.agendaUrls) : v }));
   const [isConnecting, setIsConnecting] = useState(null);
 
   // Init Data & Live Klok
@@ -1945,14 +1951,14 @@ export default function App() {
 
               <div className="flex items-center justify-between bg-zinc-950/50 border border-zinc-800 p-4 rounded-xl mt-4">
                 <div>
-                  <h4 className="font-bold text-zinc-200">Herplan Schema</h4>
-                  <p className="text-xs text-zinc-500 mt-1">Forceer AI om het schema opnieuw in te plannen op basis van huidige agenda.</p>
+                  <h4 className="font-bold text-zinc-200">Forceer Herplanning</h4>
+                  <p className="text-xs text-zinc-500 mt-1">Verwijdert AI-sessies en plant opnieuw in op basis van huidige agenda.</p>
                 </div>
                 <button
-                  onClick={() => { hasAutoPlannedRef.current = false; handleAIAutoPlan(false); }}
-                  className="bg-fuchsia-600 hover:bg-fuchsia-500 text-white text-xs font-bold px-4 py-2 rounded-xl transition-colors"
+                  onClick={() => { lastPlannedWeekRef.current = null; lastAgendaLengthRef.current = -1; handleAIAutoPlan(false); }}
+                  className="flex items-center gap-2 bg-fuchsia-600 hover:bg-fuchsia-500 text-white text-xs font-bold px-4 py-2 rounded-xl transition-colors"
                 >
-                  Herplan
+                  <RefreshCw className="w-3 h-3" /> Herplan
                 </button>
               </div>
             </div>
