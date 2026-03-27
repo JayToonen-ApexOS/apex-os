@@ -121,10 +121,6 @@ export default function App() {
   const [todayISO, setTodayISO] = useState('');
   const [quoteIndex, setQuoteIndex] = useState(0);
   
-  // Yasmin Mode
-  const isYasminMode = uiSettings.isYasminMode;
-  const setIsYasminMode = (v) => setUiSettings(prev => ({ ...prev, isYasminMode: v }));
-  
   // Refs
   const scrollContainerRef = useRef(null);
   const aiInputRef = useRef(null);
@@ -138,8 +134,10 @@ export default function App() {
   const [habits, setHabits] = useFirestoreCollection(uid ? `users/${uid}/habits` : null, initialHabits);
   const [goals, setGoals] = useFirestoreCollection(uid ? `users/${uid}/goals` : null, initialGoals);
   const [uiSettings, setUiSettings] = useFirestoreDocument(uid ? `users/${uid}/settings/ui` : null, { isYasminMode: false, scratchpad: '' });
-  const scratchpad = uiSettings.scratchpad;
-  const setScratchpad = (v) => setUiSettings(prev => ({ ...prev, scratchpad: typeof v === 'function' ? v(prev.scratchpad) : v }));
+  const isYasminMode = uiSettings.isYasminMode ?? false;
+  const setIsYasminMode = (v) => setUiSettings(p => ({ ...p, isYasminMode: v }));
+  const scratchpad = uiSettings.scratchpad ?? '';
+  const setScratchpad = (v) => setUiSettings(p => ({ ...p, scratchpad: typeof v === 'function' ? v(p.scratchpad) : v }));
   
   // Logbook State
   const [logs, setLogs] = useFirestoreCollection(uid ? `users/${uid}/logs` : null, initialLogs);
@@ -148,16 +146,16 @@ export default function App() {
 
   // Forge / Health State — persisted to Firestore
   const [forgeSettings, setForgeSettings] = useFirestoreDocument(uid ? `users/${uid}/settings/forge` : null, { weight: '75', height: '180', trainingGoal: 'Spieropbouw (Bulk)', workoutSplit: 'Push / Pull / Legs', trainingDaysPerWeek: 3, autoScheduleTrainings: true });
-  const healthStats = { weight: forgeSettings.weight, height: forgeSettings.height };
-  const setHealthStats = (val) => setForgeSettings(prev => ({ ...prev, ...(typeof val === 'function' ? val(prev) : val) }));
-  const trainingGoal = forgeSettings.trainingGoal;
-  const setTrainingGoal = (v) => setForgeSettings(prev => ({ ...prev, trainingGoal: v }));
-  const workoutSplit = forgeSettings.workoutSplit;
-  const setWorkoutSplit = (v) => setForgeSettings(prev => ({ ...prev, workoutSplit: v }));
-  const trainingDaysPerWeek = forgeSettings.trainingDaysPerWeek;
-  const setTrainingDaysPerWeek = (v) => setForgeSettings(prev => ({ ...prev, trainingDaysPerWeek: v }));
-  const autoScheduleTrainings = forgeSettings.autoScheduleTrainings;
-  const setAutoScheduleTrainings = (v) => setForgeSettings(prev => ({ ...prev, autoScheduleTrainings: v }));
+  const healthStats = { weight: forgeSettings.weight ?? '75', height: forgeSettings.height ?? '180' };
+  const setHealthStats = (v) => setForgeSettings(p => ({ ...p, ...(typeof v === 'function' ? v(p) : v) }));
+  const trainingGoal = forgeSettings.trainingGoal ?? 'Spieropbouw (Bulk)';
+  const setTrainingGoal = (v) => setForgeSettings(p => ({ ...p, trainingGoal: v }));
+  const workoutSplit = forgeSettings.workoutSplit ?? 'Push / Pull / Legs';
+  const setWorkoutSplit = (v) => setForgeSettings(p => ({ ...p, workoutSplit: v }));
+  const trainingDaysPerWeek = forgeSettings.trainingDaysPerWeek ?? 3;
+  const setTrainingDaysPerWeek = (v) => setForgeSettings(p => ({ ...p, trainingDaysPerWeek: v }));
+  const autoScheduleTrainings = forgeSettings.autoScheduleTrainings ?? true;
+  const setAutoScheduleTrainings = (v) => setForgeSettings(p => ({ ...p, autoScheduleTrainings: v }));
   const [currentSession, setCurrentSession] = useState('');
   
   // Nutrition State
@@ -210,10 +208,10 @@ export default function App() {
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
   const [agendaSettings, setAgendaSettings] = useFirestoreDocument(uid ? `users/${uid}/settings/agenda` : null, { connectedAgendas: { Google: false, Apple: false, Outlook: false, 'Andere Agenda': false }, agendaUrls: { Apple: '', 'Andere Agenda': '' } });
-  const connectedAgendas = agendaSettings.connectedAgendas;
-  const setConnectedAgendas = (v) => setAgendaSettings(prev => ({ ...prev, connectedAgendas: typeof v === 'function' ? v(prev.connectedAgendas) : v }));
-  const agendaUrls = agendaSettings.agendaUrls;
-  const setAgendaUrls = (v) => setAgendaSettings(prev => ({ ...prev, agendaUrls: typeof v === 'function' ? v(prev.agendaUrls) : v }));
+  const connectedAgendas = agendaSettings.connectedAgendas ?? { Google: false, Apple: false, Outlook: false, 'Andere Agenda': false };
+  const setConnectedAgendas = (v) => setAgendaSettings(p => ({ ...p, connectedAgendas: typeof v === 'function' ? v(p.connectedAgendas) : v }));
+  const agendaUrls = agendaSettings.agendaUrls ?? { Apple: '', 'Andere Agenda': '' };
+  const setAgendaUrls = (v) => setAgendaSettings(p => ({ ...p, agendaUrls: typeof v === 'function' ? v(p.agendaUrls) : v }));
   const [isConnecting, setIsConnecting] = useState(null);
 
   // Init Data & Live Klok
