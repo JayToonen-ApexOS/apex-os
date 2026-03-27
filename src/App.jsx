@@ -131,6 +131,7 @@ export default function App() {
   const fileInputRef = useRef(null);
   const hasAutoPlannedRef = useRef(false);
   const lastAgendaLengthRef = useRef(0);
+  const lastPlannedWeekRef = useRef(null);
   
   const [projects, setProjects] = useFirestoreCollection(uid ? `users/${uid}/projects` : null, initialProjects);
   const [habits, setHabits] = useFirestoreCollection(uid ? `users/${uid}/habits` : null, initialHabits);
@@ -574,8 +575,8 @@ export default function App() {
           availableDays.forEach(day => {
             let penalty = 0; 
             const dayIndex = currentWeekDates.indexOf(day.date);
-            if (tempDaysWithTraining.includes(dayIndex > 0 ? currentWeekDates[dayIndex - 1] : null)) penalty += 50;
-            if (tempDaysWithTraining.includes(dayIndex < 6 ? currentWeekDates[dayIndex + 1] : null)) penalty += 50;
+            if (tempDaysWithTraining.includes(dayIndex > 0 ? currentWeekDates[dayIndex - 1] : null)) penalty += 1000;
+            if (tempDaysWithTraining.includes(dayIndex < 6 ? currentWeekDates[dayIndex + 1] : null)) penalty += 1000;
             day.currentScore = day.score + penalty;
           });
           availableDays.sort((a, b) => a.currentScore - b.currentScore);
@@ -603,9 +604,20 @@ export default function App() {
 
   useEffect(() => {
     if (!autoScheduleTrainings || !workoutSplit || !todayISO) return;
+
+    const now = new Date();
+    const day = now.getDay() === 0 ? 7 : now.getDay();
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - day + 1);
+    const weekKey = weekStart.toISOString().split('T')[0];
+
     const nonAICount = agendaEvents.filter(e => !e.isAI).length;
-    if (nonAICount === lastAgendaLengthRef.current) return;
+
+    if (lastPlannedWeekRef.current === weekKey && nonAICount === lastAgendaLengthRef.current) return;
+
+    lastPlannedWeekRef.current = weekKey;
     lastAgendaLengthRef.current = nonAICount;
+
     const timer = setTimeout(() => { handleAIAutoPlan(true); }, 500);
     return () => clearTimeout(timer);
   }, [autoScheduleTrainings, workoutSplit, todayISO, trainingDaysPerWeek, agendaEvents]);
