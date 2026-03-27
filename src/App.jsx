@@ -757,54 +757,19 @@ export default function App() {
     if (!url) return;
     setIsConnecting(provider);
 
-    // Convert webcal:// to https:// and handle iCloud CalDAV published URLs
-    const normalizedUrl = (() => {
-      let u = url.replace(/^webcal:\/\//i, 'https://');
-      // iCloud CalDAV published calendar → convert to p-caldav.icloud.com ics endpoint
-      if (u.includes('p163-caldav.icloud.com/published') || u.includes('caldav.icloud.com/published')) {
-        u = u.replace('https://', 'https://').replace('/caldav.icloud.com/published/', '/caldav.icloud.com/published/');
-        // The direct .ics export URL for iCloud published calendars
-        u = u + (u.includes('?') ? '&' : '?') + 'export';
-      }
-      return u;
-    })();
-
-    const corsProxies = [
-      (u) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
-      (u) => `https://api.allorigins.win/get?url=${encodeURIComponent(u)}`,
-      (u) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
-      (u) => `https://thingproxy.freeboard.io/fetch/${u}`,
-    ];
-
-    let icsText = null;
-
-    for (const proxyFn of corsProxies) {
-      try {
-        const proxyUrl = proxyFn(normalizedUrl);
-        const response = await fetch(proxyUrl, { signal: AbortSignal.timeout(8000) });
-        if (!response.ok) continue;
-
-        const contentType = response.headers.get('content-type') || '';
-        if (contentType.includes('application/json')) {
-          const data = await response.json();
-          icsText = data.contents;
-        } else {
-          icsText = await response.text();
-        }
-
-        if (icsText && (icsText.includes('BEGIN:VCALENDAR') || icsText.includes('BEGIN:VEVENT'))) {
-          break;
-        }
-        icsText = null;
-      } catch (err) {
-        console.warn('Proxy failed, trying next...', err);
-        icsText = null;
-      }
-    }
+    const normalizedUrl = url.replace(/^webcal:\/\//i, 'https://');
 
     try {
-      if (!icsText) {
-        throw new Error('Kan de kalenderlink niet bereiken. Controleer of de link openbaar is.');
+      const response = await fetch(`/api/proxy-ics?url=${encodeURIComponent(normalizedUrl)}`, {
+        signal: AbortSignal.timeout(10000),
+      });
+
+      if (!response.ok) throw new Error(`Server fout: ${response.status}`);
+
+      const icsText = await response.text();
+
+      if (!icsText.includes('BEGIN:VCALENDAR') && !icsText.includes('BEGIN:VEVENT')) {
+        throw new Error('Ongeldig kalender formaat. Dit lijkt geen .ics bestand te zijn.');
       }
 
       const parsedEvents = parseICSData(icsText, provider);
@@ -818,16 +783,15 @@ export default function App() {
       setConnectedAgendas(prev => ({ ...prev, [provider]: true }));
       setAgendaEvents(prev => {
         const filtered = prev.filter(e => e.type !== provider);
-        const combined = [...filtered, ...parsedEvents];
-        return combined.sort((a, b) => {
-          const dateCompare = a.date.localeCompare(b.date);
-          return dateCompare !== 0 ? dateCompare : a.time.localeCompare(b.time);
+        return [...filtered, ...parsedEvents].sort((a, b) => {
+          const dc = a.date.localeCompare(b.date);
+          return dc !== 0 ? dc : a.time.localeCompare(b.time);
         });
       });
 
       triggerToast(`Succes! ${parsedEvents.length} afspraken ingeladen vanuit de link.`);
     } catch (error) {
-      console.error("ICS Sync Error:", error);
+      console.error('ICS Sync Error:', error);
       triggerToast(`Fout bij koppelen: ${error.message}`);
     } finally {
       setIsConnecting(null);
