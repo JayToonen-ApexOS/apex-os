@@ -2,8 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useFirestoreCollection } from './hooks/useFirestoreCollection';
 import { useAuth } from './hooks/useAuth';
 import { useMessaging } from './hooks/useMessaging';
-import { getToken } from 'firebase/messaging';
-import { messagingPromise } from './firebase';
+import { getMessagingInstance, getToken } from './messaging';
 import LoginScreen from './components/LoginScreen';
 import { 
   CheckCircle2, Circle, Sparkles, Target, FolderKanban, Bell,
@@ -130,7 +129,7 @@ export default function App() {
         setDebugToken('FOUT: VITE_FIREBASE_VAPID_KEY is niet ingesteld in Vercel env vars.');
         return;
       }
-      const messaging = await messagingPromise;
+      const messaging = await getMessagingInstance();
       if (!messaging) {
         setDebugToken('FOUT: Firebase Messaging wordt niet ondersteund in deze browser.');
         return;
