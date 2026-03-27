@@ -15,6 +15,7 @@ dist-ssr
 # Environment variables (bevat Firebase credentials)
 .env
 .env.local
+functions/.env
 
 # Editor directories and files
 .vscode/*

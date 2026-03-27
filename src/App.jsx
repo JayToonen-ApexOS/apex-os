@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useFirestoreCollection } from './hooks/useFirestoreCollection';
 import { useAuth } from './hooks/useAuth';
-import { useMessaging } from './hooks/useMessaging';
-import { getMessagingInstance, getToken } from './messaging';
 import LoginScreen from './components/LoginScreen';
 import { 
   CheckCircle2, Circle, Sparkles, Target, FolderKanban, Bell,
@@ -114,48 +112,6 @@ export default function App() {
   const { user, loading: authLoading, signIn, signOut } = useAuth();
   const uid = user?.uid ?? null;
 
-  // --- PUSH MELDINGEN ---
-  const { permission: notifPermission, requestPermission, fcmToken } = useMessaging(user);
-
-  // Auto-vraag notificatietoestemming zodra gebruiker is ingelogd
-  useEffect(() => {
-    if (user && notifPermission === 'default') {
-      requestPermission();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
-
-  const [debugToken, setDebugToken] = useState('');
-  const [debugTokenLoading, setDebugTokenLoading] = useState(false);
-
-  const handleFetchDebugToken = async () => {
-    setDebugToken('');
-    setDebugTokenLoading(true);
-    try {
-      const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
-      if (!vapidKey || vapidKey === 'your_vapid_key_here') {
-        setDebugToken('FOUT: VITE_FIREBASE_VAPID_KEY is niet ingesteld in Vercel env vars.');
-        return;
-      }
-      const messaging = await getMessagingInstance();
-      if (!messaging) {
-        setDebugToken('FOUT: Firebase Messaging wordt niet ondersteund in deze browser.');
-        return;
-      }
-      let swReg = null;
-      if ('serviceWorker' in navigator) {
-        swReg = await navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' });
-      }
-      const tokenOptions = { vapidKey };
-      if (swReg) tokenOptions.serviceWorkerRegistration = swReg;
-      const token = await getToken(messaging, tokenOptions);
-      setDebugToken(token || 'Geen token ontvangen (controleer VAPID key en SW).');
-    } catch (err) {
-      setDebugToken('FOUT: ' + err.message);
-    } finally {
-      setDebugTokenLoading(false);
-    }
-  };
 
   // --- STATE ---
   const [activeTab, setActiveTab] = useState('hub');
@@ -801,35 +757,60 @@ export default function App() {
     if (!url) return;
     setIsConnecting(provider);
 
+    // Convert webcal:// to https:// so CORS proxies can fetch it
+    const normalizedUrl = url.replace(/^webcal:\/\//i, 'https://');
+
+    const corsProxies = [
+      (u) => `https://api.allorigins.win/get?url=${encodeURIComponent(u)}`,
+      (u) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+      (u) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
+    ];
+
+    let icsText = null;
+
+    for (const proxyFn of corsProxies) {
+      try {
+        const proxyUrl = proxyFn(normalizedUrl);
+        const response = await fetch(proxyUrl, { signal: AbortSignal.timeout(8000) });
+        if (!response.ok) continue;
+
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          const data = await response.json();
+          icsText = data.contents;
+        } else {
+          icsText = await response.text();
+        }
+
+        if (icsText && (icsText.includes('BEGIN:VCALENDAR') || icsText.includes('BEGIN:VEVENT'))) {
+          break;
+        }
+        icsText = null;
+      } catch (err) {
+        console.warn('Proxy failed, trying next...', err);
+        icsText = null;
+      }
+    }
+
     try {
-      // Gebruik allorigins als CORS proxy om het bestand uit te lezen vanuit de client-side
-      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-      const response = await fetch(proxyUrl);
-      
-      if (!response.ok) throw new Error('Kon het bestand niet bereiken.');
-      
-      const data = await response.json();
-      
-      if (!data.contents || (!data.contents.includes('BEGIN:VCALENDAR') && !data.contents.includes('BEGIN:VEVENT'))) {
-        throw new Error('Ongeldig kalender formaat. Dit lijkt geen .ics bestand te zijn.');
+      if (!icsText) {
+        throw new Error('Kan de kalenderlink niet bereiken. Controleer of de link openbaar is.');
       }
 
-      // Vertaal de tekst data naar bruikbare evenementen in onze kalender state
-      const parsedEvents = parseICSData(data.contents, provider);
-      
+      const parsedEvents = parseICSData(icsText, provider);
+
       if (parsedEvents.length === 0) {
-         triggerToast('Agenda ingeladen, maar er werden geen (toekomstige/leesbare) afspraken gevonden.');
-         setIsConnecting(null);
-         return;
+        triggerToast('Agenda ingeladen, maar er werden geen (toekomstige/leesbare) afspraken gevonden.');
+        setIsConnecting(null);
+        return;
       }
 
       setConnectedAgendas(prev => ({ ...prev, [provider]: true }));
       setAgendaEvents(prev => {
-        // Filter eerst eventuele oude events van deze provider eruit, en voeg dan de nieuwe toe
         const filtered = prev.filter(e => e.type !== provider);
         const combined = [...filtered, ...parsedEvents];
-        return combined.sort((a,b) => {
-          const dateCompare = a.date.localeCompare(b.date); 
+        return combined.sort((a, b) => {
+          const dateCompare = a.date.localeCompare(b.date);
           return dateCompare !== 0 ? dateCompare : a.time.localeCompare(b.time);
         });
       });
@@ -957,42 +938,6 @@ export default function App() {
     return (
       <div className="space-y-6 animate-in fade-in duration-500">
 
-        {/* FCM token — tijdelijk zichtbaar voor testdoeleinden */}
-        {fcmToken && (
-          <div className="flex items-center gap-2 bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2">
-            <span className="text-[10px] text-zinc-500 shrink-0 font-mono uppercase">FCM</span>
-            <input
-              readOnly
-              value={fcmToken}
-              className="flex-1 bg-transparent text-[10px] text-zinc-400 font-mono outline-none truncate"
-              onFocus={e => e.target.select()}
-            />
-            <button
-              onClick={() => navigator.clipboard.writeText(fcmToken)}
-              className="shrink-0 text-[10px] font-bold text-cyan-400 hover:text-cyan-300 transition-colors"
-            >
-              Kopieer
-            </button>
-          </div>
-        )}
-
-        {/* Notification permission banner */}
-        {notifPermission === 'default' && (
-          <div className="flex items-center justify-between gap-4 bg-cyan-500/10 border border-cyan-500/30 rounded-xl px-4 py-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <Bell className="w-4 h-4 text-cyan-400 shrink-0" />
-              <p className="text-sm text-zinc-300 truncate">
-                Zet meldingen aan voor de dagelijkse 08:00 briefing.
-              </p>
-            </div>
-            <button
-              onClick={requestPermission}
-              className="shrink-0 text-xs font-bold text-cyan-400 hover:text-cyan-300 border border-cyan-500/40 rounded-lg px-3 py-1.5 transition-colors"
-            >
-              Aanzetten
-            </button>
-          </div>
-        )}
 
         <div className="flex flex-col md:flex-row md:justify-between md:items-end mb-8 gap-4">
           <div className={`${isYasminMode ? 'bg-purple-500/20 shadow-[0_0_20px_rgba(168,85,247,0.3)]' : 'bg-cyan-500/20'} p-4 rounded-full shrink-0 relative z-10 transition-colors`}>
@@ -2038,67 +1983,10 @@ export default function App() {
             </div>
           </div>
 
-          {/* FCM DEBUG TOKEN */}
-          {fcmToken && (
-            <div className="bg-zinc-900 rounded-3xl p-6 md:p-8 border border-zinc-800 shadow-xl w-full">
-              <h3 className="font-bold text-xl text-zinc-100 mb-2 flex items-center gap-2">
-                <Bell className="w-5 h-5 text-cyan-500"/> Push Token
-              </h3>
-              <p className="text-zinc-400 mb-4 text-sm leading-relaxed">Kopieer deze token om een testmelding te sturen via Firebase Console → Cloud Messaging.</p>
-              <div className="flex gap-2">
-                <input
-                  readOnly
-                  value={fcmToken}
-                  className="flex-1 bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-xs text-zinc-400 font-mono outline-none truncate"
-                  onFocus={e => e.target.select()}
-                />
-                <button
-                  onClick={() => navigator.clipboard.writeText(fcmToken)}
-                  className="shrink-0 px-4 py-3 rounded-xl text-xs font-bold bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 border border-cyan-500/30 transition-all"
-                >
-                  Kopieer
-                </button>
-              </div>
-            </div>
-          )}
 
         </div>
 
       </div>
-
-      {/* DEBUG INFO */}
-      <div className="bg-zinc-900 rounded-3xl p-6 md:p-8 border border-zinc-800 shadow-xl">
-        <h3 className="font-bold text-xl text-zinc-100 mb-2 flex items-center gap-2">
-          <Info className="w-5 h-5 text-zinc-500"/> Debug Info
-        </h3>
-        <p className="text-zinc-500 mb-4 text-sm">Haal het FCM registration token op om een testmelding te sturen via Firebase Console.</p>
-        <button
-          onClick={handleFetchDebugToken}
-          disabled={debugTokenLoading}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold bg-zinc-800 text-zinc-200 hover:bg-zinc-700 border border-zinc-700 disabled:opacity-50 transition-all"
-        >
-          {debugTokenLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bell className="w-4 h-4" />}
-          Toon FCM Token
-        </button>
-        {debugToken && (
-          <div className="mt-4 space-y-2">
-            <textarea
-              readOnly
-              value={debugToken}
-              rows={4}
-              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-xs text-zinc-300 font-mono outline-none resize-none"
-              onFocus={e => e.target.select()}
-            />
-            <button
-              onClick={() => navigator.clipboard.writeText(debugToken)}
-              className="text-xs font-bold text-cyan-400 hover:text-cyan-300 border border-cyan-500/40 rounded-lg px-3 py-1.5 transition-colors"
-            >
-              Kopieer token
-            </button>
-          </div>
-        )}
-      </div>
-
 
     </div>
   );
