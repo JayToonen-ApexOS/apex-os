@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useFirestoreCollection } from './hooks/useFirestoreCollection';
+import { useFirestoreDocument } from './hooks/useFirestoreDocument';
 import { useAuth } from './hooks/useAuth';
 import LoginScreen from './components/LoginScreen';
 import { 
@@ -198,8 +199,14 @@ export default function App() {
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
-  const [connectedAgendas, setConnectedAgendas] = useState({ Google: false, Apple: false, Outlook: false, 'Andere Agenda': false });
-  const [agendaUrls, setAgendaUrls] = useState({ Apple: '', 'Andere Agenda': '' });
+  const [connectedAgendas, setConnectedAgendas] = useFirestoreDocument(
+    uid ? `users/${uid}/settings/agendaConnections` : null,
+    { Google: false, Apple: false, Outlook: false, 'Andere Agenda': false }
+  );
+  const [agendaUrls, setAgendaUrls] = useFirestoreDocument(
+    uid ? `users/${uid}/settings/agendaUrls` : null,
+    { Apple: '', 'Andere Agenda': '' }
+  );
   const [isConnecting, setIsConnecting] = useState(null);
 
   // Init Data & Live Klok
@@ -1907,6 +1914,19 @@ export default function App() {
                   <input type="checkbox" checked={autoScheduleTrainings} onChange={(e) => { setAutoScheduleTrainings(e.target.checked); if (e.target.checked) hasAutoPlannedRef.current = false; }} className="sr-only peer" />
                   <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-fuchsia-500"></div>
                 </label>
+              </div>
+
+              <div className="flex items-center justify-between bg-zinc-950/50 border border-zinc-800 p-4 rounded-xl mt-4">
+                <div>
+                  <h4 className="font-bold text-zinc-200">Herplan Schema</h4>
+                  <p className="text-xs text-zinc-500 mt-1">Forceer AI om het schema opnieuw in te plannen op basis van huidige agenda.</p>
+                </div>
+                <button
+                  onClick={() => { hasAutoPlannedRef.current = false; handleAIAutoPlan(false); }}
+                  className="bg-fuchsia-600 hover:bg-fuchsia-500 text-white text-xs font-bold px-4 py-2 rounded-xl transition-colors"
+                >
+                  Herplan
+                </button>
               </div>
             </div>
           </div>
