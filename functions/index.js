@@ -69,14 +69,10 @@ function httpsGet(url) {
   });
 }
 
-exports.morningBriefingV1 = functions
-  .region('europe-west1')
-  .pubsub.schedule('0 8 * * *')
-  .timeZone('Europe/Amsterdam')
-  .onRun(async () => {
-    // Verify env vars are loaded (log first 4 chars only)
-    console.log('[morningBriefing] GMAIL_USER prefix:', (process.env.GMAIL_USER || '').slice(0, 4));
-    console.log('[morningBriefing] GMAIL_APP_PASSWORD set:', !!process.env.GMAIL_APP_PASSWORD);
+async function runBriefing() {
+    // Verify env vars are loaded
+    console.log('[morningBriefing] GMAIL_USER:', process.env.GMAIL_USER);
+    console.log('[morningBriefing] GMAIL_APP_PASSWORD length:', process.env.GMAIL_APP_PASSWORD?.length ?? 0);
 
     const transporter = createTransporter();
 
@@ -184,5 +180,18 @@ exports.morningBriefingV1 = functions
     });
 
     await Promise.allSettled(sends);
-    return null;
+}
+
+exports.morningBriefingV1 = functions
+  .region('europe-west1')
+  .pubsub.schedule('0 8 * * *')
+  .timeZone('Europe/Amsterdam')
+  .onRun(() => runBriefing());
+
+// HTTP trigger voor handmatig testen
+exports.triggerBriefing = functions
+  .region('europe-west1')
+  .https.onRequest(async (req, res) => {
+    await runBriefing();
+    res.send('Briefing verstuurd — check de logs.');
   });
