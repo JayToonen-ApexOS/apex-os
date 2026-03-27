@@ -4,15 +4,13 @@ import { db } from '../firebase';
 
 export function useFirestoreDocument(docPath, initialValue = {}) {
   const [state, setState] = useState(initialValue);
+  const isSyncing = useRef(false);
   const docPathRef = useRef(docPath);
-  const isRemoteUpdate = useRef(false);
-  const hasLoaded = useRef(false);
 
   useEffect(() => {
     docPathRef.current = docPath;
   }, [docPath]);
 
-  // Listen to Firestore changes
   useEffect(() => {
     if (!docPath) {
       setState(initialValue);
@@ -21,15 +19,13 @@ export function useFirestoreDocument(docPath, initialValue = {}) {
 
     const ref = doc(db, docPath);
     const unsubscribe = onSnapshot(ref, (snap) => {
+      // Ignore snapshots triggered by our own writes
+      if (isSyncing.current) return;
       if (snap.exists()) {
-        isRemoteUpdate.current = true;
         setState({ ...initialValue, ...snap.data() });
-        hasLoaded.current = true;
-      } else {
-        hasLoaded.current = true;
       }
     }, (error) => {
-      console.error('useFirestoreDocument listener error:', error);
+      console.error('useFirestoreDocument error:', docPath, error);
     });
 
     return unsubscribe;
@@ -42,12 +38,15 @@ export function useFirestoreDocument(docPath, initialValue = {}) {
     setState(prev => {
       const newValue = typeof newValueOrUpdater === 'function'
         ? newValueOrUpdater(prev)
-        : newValueOrUpdater;
+        : { ...prev, ...newValueOrUpdater };
 
-      // Write to Firestore immediately, outside of setState
+      isSyncing.current = true;
       setDoc(doc(db, currentPath), newValue, { merge: true })
-        .then(() => console.log('Firestore write OK:', currentPath, newValue))
-        .catch(e => console.error('Firestore write FAILED:', currentPath, e));
+        .then(() => { isSyncing.current = false; })
+        .catch(e => {
+          isSyncing.current = false;
+          console.error('Firestore write failed:', currentPath, e);
+        });
 
       return newValue;
     });
