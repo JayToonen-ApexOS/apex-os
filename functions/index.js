@@ -74,6 +74,10 @@ exports.morningBriefingV1 = functions
   .pubsub.schedule('0 8 * * *')
   .timeZone('Europe/Amsterdam')
   .onRun(async () => {
+    // Verify env vars are loaded (log first 4 chars only)
+    console.log('[morningBriefing] GMAIL_USER prefix:', (process.env.GMAIL_USER || '').slice(0, 4));
+    console.log('[morningBriefing] GMAIL_APP_PASSWORD set:', !!process.env.GMAIL_APP_PASSWORD);
+
     const transporter = createTransporter();
 
     // Haal alle users op
@@ -164,15 +168,19 @@ exports.morningBriefingV1 = functions
         </div>
       `;
 
-      await transporter.sendMail({
-        from: `"Apex OS" <${process.env.GMAIL_USER}>`,
-        to: email,
-        subject: `☀️ Apex OS Briefing — ${today}`,
-        text: textBody,
-        html: htmlBody,
-      });
-
-      console.log(`[morningBriefing] E-mail verstuurd naar ${email} (uid=${uid})`);
+      console.log(`[morningBriefing] Versturen naar: ${email}`);
+      try {
+        const info = await transporter.sendMail({
+          from: `"Apex OS" <${process.env.GMAIL_USER}>`,
+          to: email,
+          subject: `☀️ Apex OS Briefing — ${today}`,
+          text: textBody,
+          html: htmlBody,
+        });
+        console.log(`[morningBriefing] E-mail verstuurd naar ${email} — response: ${info.response}`);
+      } catch (mailErr) {
+        console.error(`[morningBriefing] sendMail FOUT voor ${email}:`, mailErr.message, mailErr.code || '');
+      }
     });
 
     await Promise.allSettled(sends);
