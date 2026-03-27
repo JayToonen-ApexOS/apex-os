@@ -545,38 +545,50 @@ export default function App() {
 
         const now = new Date();
         const currentDayOfWeek = now.getDay() === 0 ? 7 : now.getDay();
+
+        // Build current week (Mon–Sun)
         const currentWeekDates = [];
         for (let i = 1; i <= 7; i++) {
           const d = new Date(now);
           d.setDate(now.getDate() - currentDayOfWeek + i);
           const offset = d.getTimezoneOffset();
-          currentWeekDates.push(new Date(d.getTime() - (offset*60*1000)).toISOString().split('T')[0]);
+          currentWeekDates.push(new Date(d.getTime() - (offset * 60 * 1000)).toISOString().split('T')[0]);
         }
 
+        // Build next week (Mon–Sun)
+        const nextWeekDates = [];
+        for (let i = 8; i <= 14; i++) {
+          const d = new Date(now);
+          d.setDate(now.getDate() - currentDayOfWeek + i);
+          const offset = d.getTimezoneOffset();
+          nextWeekDates.push(new Date(d.getTime() - (offset * 60 * 1000)).toISOString().split('T')[0]);
+        }
+
+        const allTwoWeekDates = [...currentWeekDates, ...nextWeekDates];
         const todayIndex = currentDayOfWeek - 1;
-        const futureWeekDates = currentWeekDates.slice(todayIndex);
+        const futureWeekDates = [...currentWeekDates.slice(todayIndex), ...nextWeekDates];
 
         const cleanedAgenda = prevAgenda.filter(e => !(e.isAI && futureWeekDates.includes(e.date)));
-        const daysWithFixedTraining = cleanedAgenda.filter(e => isOccupiedByTraining(e) && currentWeekDates.includes(e.date)).map(e => e.date);
-        const neededTrainings = Math.max(0, trainingDaysPerWeek - new Set(daysWithFixedTraining).size);
+        const daysWithFixedTraining = cleanedAgenda.filter(e => isOccupiedByTraining(e) && allTwoWeekDates.includes(e.date)).map(e => e.date);
+        const neededTrainings = Math.max(0, (trainingDaysPerWeek * 2) - new Set(daysWithFixedTraining).size);
 
         if (neededTrainings === 0) return cleanedAgenda;
 
         let availableDays = futureWeekDates.filter(date => !daysWithFixedTraining.includes(date)).map(date => {
-            const eventsOnDay = cleanedAgenda.filter(e => e.date === date && !isOccupiedByTraining(e) && !e.isAI);
-            return { date, eventsOnDay, score: eventsOnDay.length };
-          });
-          
-        let selectedDays = []; 
+          const eventsOnDay = cleanedAgenda.filter(e => e.date === date && !isOccupiedByTraining(e) && !e.isAI);
+          return { date, eventsOnDay, score: eventsOnDay.length };
+        });
+
+        let selectedDays = [];
         let tempDaysWithTraining = [...daysWithFixedTraining];
-        
+
         for (let i = 0; i < neededTrainings; i++) {
-          if (availableDays.length === 0) break; 
+          if (availableDays.length === 0) break;
           availableDays.forEach(day => {
-            let penalty = 0; 
-            const dayIndex = currentWeekDates.indexOf(day.date);
-            if (tempDaysWithTraining.includes(dayIndex > 0 ? currentWeekDates[dayIndex - 1] : null)) penalty += 1000;
-            if (tempDaysWithTraining.includes(dayIndex < 6 ? currentWeekDates[dayIndex + 1] : null)) penalty += 1000;
+            let penalty = 0;
+            const dayIndex = allTwoWeekDates.indexOf(day.date);
+            if (tempDaysWithTraining.includes(dayIndex > 0 ? allTwoWeekDates[dayIndex - 1] : null)) penalty += 1000;
+            if (tempDaysWithTraining.includes(dayIndex < 13 ? allTwoWeekDates[dayIndex + 1] : null)) penalty += 1000;
             day.currentScore = day.score + penalty;
           });
           availableDays.sort((a, b) => a.currentScore - b.currentScore);
@@ -609,7 +621,10 @@ export default function App() {
     const day = now.getDay() === 0 ? 7 : now.getDay();
     const weekStart = new Date(now);
     weekStart.setDate(now.getDate() - day + 1);
-    const weekKey = weekStart.toISOString().split('T')[0];
+    const weekEnd = new Date(now);
+    weekEnd.setDate(now.getDate() - day + 14);
+    const fmt = (d) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+    const weekKey = `${fmt(weekStart)}_${fmt(weekEnd)}`;
 
     const nonAICount = agendaEvents.filter(e => !e.isAI).length;
 
