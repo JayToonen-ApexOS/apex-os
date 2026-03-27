@@ -546,8 +546,8 @@ export default function App() {
         if (neededTrainings === 0) return cleanedAgenda; 
         
         let availableDays = futureWeekDates.filter(date => !daysWithFixedTraining.includes(date)).map(date => {
-            const eventsOnDay = cleanedAgenda.filter(e => e.date === date && !isTrainingEvent(e, workoutSplit));
-            return { date, eventsOnDay, score: eventsOnDay.length * 10 };
+            const eventsOnDay = cleanedAgenda.filter(e => e.date === date && !isTrainingEvent(e, workoutSplit) && !e.isAI);
+            return { date, eventsOnDay, score: eventsOnDay.length };
           });
           
         let selectedDays = []; 
@@ -590,7 +590,7 @@ export default function App() {
        const timer = setTimeout(() => { handleAIAutoPlan(true); }, 2000);
        return () => clearTimeout(timer);
     }
-  }, [autoScheduleTrainings, workoutSplit, todayISO]);
+  }, [autoScheduleTrainings, workoutSplit, todayISO, trainingDaysPerWeek]);
 
   const handleImageUpload = (e) => {
     if (!activeForgeEventId) return;
