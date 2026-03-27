@@ -129,6 +129,7 @@ export default function App() {
   const logbookEndRef = useRef(null);
   const fileInputRef = useRef(null);
   const hasAutoPlannedRef = useRef(false);
+  const lastAgendaLengthRef = useRef(0);
   
   const [projects, setProjects] = useFirestoreCollection(uid ? `users/${uid}/projects` : null, initialProjects);
   const [habits, setHabits] = useFirestoreCollection(uid ? `users/${uid}/habits` : null, initialHabits);
@@ -594,11 +595,13 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (autoScheduleTrainings && workoutSplit && todayISO) {
-       const timer = setTimeout(() => { handleAIAutoPlan(true); }, 2000);
-       return () => clearTimeout(timer);
-    }
-  }, [autoScheduleTrainings, workoutSplit, todayISO, trainingDaysPerWeek]);
+    if (!autoScheduleTrainings || !workoutSplit || !todayISO) return;
+    const nonAICount = agendaEvents.filter(e => !e.isAI).length;
+    if (nonAICount === lastAgendaLengthRef.current) return;
+    lastAgendaLengthRef.current = nonAICount;
+    const timer = setTimeout(() => { handleAIAutoPlan(true); }, 500);
+    return () => clearTimeout(timer);
+  }, [autoScheduleTrainings, workoutSplit, todayISO, trainingDaysPerWeek, agendaEvents]);
 
   const handleImageUpload = (e) => {
     if (!activeForgeEventId) return;
