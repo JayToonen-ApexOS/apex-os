@@ -757,13 +757,23 @@ export default function App() {
     if (!url) return;
     setIsConnecting(provider);
 
-    // Convert webcal:// to https:// so CORS proxies can fetch it
-    const normalizedUrl = url.replace(/^webcal:\/\//i, 'https://');
+    // Convert webcal:// to https:// and handle iCloud CalDAV published URLs
+    const normalizedUrl = (() => {
+      let u = url.replace(/^webcal:\/\//i, 'https://');
+      // iCloud CalDAV published calendar → convert to p-caldav.icloud.com ics endpoint
+      if (u.includes('p163-caldav.icloud.com/published') || u.includes('caldav.icloud.com/published')) {
+        u = u.replace('https://', 'https://').replace('/caldav.icloud.com/published/', '/caldav.icloud.com/published/');
+        // The direct .ics export URL for iCloud published calendars
+        u = u + (u.includes('?') ? '&' : '?') + 'export';
+      }
+      return u;
+    })();
 
     const corsProxies = [
-      (u) => `https://api.allorigins.win/get?url=${encodeURIComponent(u)}`,
       (u) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+      (u) => `https://api.allorigins.win/get?url=${encodeURIComponent(u)}`,
       (u) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
+      (u) => `https://thingproxy.freeboard.io/fetch/${u}`,
     ];
 
     let icsText = null;
