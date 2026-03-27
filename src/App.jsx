@@ -117,6 +117,14 @@ export default function App() {
   // --- PUSH MELDINGEN ---
   const { permission: notifPermission, requestPermission, fcmToken } = useMessaging(user);
 
+  // Auto-vraag notificatietoestemming zodra gebruiker is ingelogd
+  useEffect(() => {
+    if (user && notifPermission === 'default') {
+      requestPermission();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
   const [debugToken, setDebugToken] = useState('');
   const [debugTokenLoading, setDebugTokenLoading] = useState(false);
 
@@ -948,6 +956,25 @@ export default function App() {
 
     return (
       <div className="space-y-6 animate-in fade-in duration-500">
+
+        {/* FCM token — tijdelijk zichtbaar voor testdoeleinden */}
+        {fcmToken && (
+          <div className="flex items-center gap-2 bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2">
+            <span className="text-[10px] text-zinc-500 shrink-0 font-mono uppercase">FCM</span>
+            <input
+              readOnly
+              value={fcmToken}
+              className="flex-1 bg-transparent text-[10px] text-zinc-400 font-mono outline-none truncate"
+              onFocus={e => e.target.select()}
+            />
+            <button
+              onClick={() => navigator.clipboard.writeText(fcmToken)}
+              className="shrink-0 text-[10px] font-bold text-cyan-400 hover:text-cyan-300 transition-colors"
+            >
+              Kopieer
+            </button>
+          </div>
+        )}
 
         {/* Notification permission banner */}
         {notifPermission === 'default' && (
