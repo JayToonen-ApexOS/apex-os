@@ -1,25 +1,39 @@
 /**
  * Apex OS — Firebase Cloud Functions v1
  *
- * morningBriefing: draait elke dag om 08:00 Amsterdam-tijd,
+ * morningBriefingV1: draait elke dag om 08:00 Amsterdam-tijd,
  * haalt de dagagenda en training op uit Firestore + weer via Open-Meteo,
- * en verstuurt een FCM pushmelding naar alle geregistreerde apparaten.
+ * en verstuurt een e-mail via Gmail SMTP (Nodemailer).
+ *
+ * Vereiste environment config:
+ *   firebase functions:config:set gmail.user="jouw@gmail.com" gmail.app_password="xxxx"
  *
  * Deploy:
  *   cd functions && npm install
  *   firebase deploy --only functions
  */
 
-const functions = require('firebase-functions/v1');
-const { initializeApp } = require('firebase-admin/app');
-const { getFirestore } = require('firebase-admin/firestore');
-const { getMessaging } = require('firebase-admin/messaging');
-const https = require('https');
+const functions   = require('firebase-functions/v1');
+const { initializeApp }  = require('firebase-admin/app');
+const { getFirestore }   = require('firebase-admin/firestore');
+const { getAuth }        = require('firebase-admin/auth');
+const nodemailer         = require('nodemailer');
+const https              = require('https');
 
 initializeApp();
 
 const db = getFirestore();
-const fcm = getMessaging();
+
+// Gmail SMTP transporter — credentials via environment variables
+function createTransporter() {
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_APP_PASSWORD,
+    },
+  });
+}
 
 // Weercode → leesbare tekst (Open-Meteo WMO codes)
 function weatherCodeToText(code) {
@@ -60,6 +74,8 @@ exports.morningBriefingV1 = functions
   .pubsub.schedule('0 8 * * *')
   .timeZone('Europe/Amsterdam')
   .onRun(async () => {
+    const transporter = createTransporter();
+
     // Haal alle users op
     const usersSnap = await db.collection('users').get();
     if (usersSnap.empty) return null;
@@ -72,7 +88,7 @@ exports.morningBriefingV1 = functions
       month: '2-digit',
       day: '2-digit',
     });
-    const today = formatter.format(now); // geeft "YYYY-MM-DD" via en-CA locale
+    const today = formatter.format(now);
 
     // Haal weer op via Open-Meteo
     let weatherLine = '';
@@ -83,20 +99,25 @@ exports.morningBriefingV1 = functions
       );
       const temp = Math.round(data.current_weather.temperature);
       const desc = weatherCodeToText(data.current_weather.weathercode);
-      weatherLine = `🌡️ ${temp}°C — ${desc}`;
+      weatherLine = `${temp}°C — ${desc}`;
     } catch (e) {
       console.warn('Weer ophalen mislukt:', e.message);
     }
 
-    // Stuur melding aan elke user
+    // Stuur e-mail aan elke user
     const sends = usersSnap.docs.map(async (userDoc) => {
       const uid = userDoc.id;
 
-      // FCM-token ophalen
-      const fcmDoc = await db.doc(`users/${uid}/settings/fcm`).get();
-      if (!fcmDoc.exists) return;
-      const { token } = fcmDoc.data();
-      if (!token) return;
+      // E-mailadres ophalen uit Firebase Auth
+      let email;
+      try {
+        const authUser = await getAuth().getUser(uid);
+        email = authUser.email;
+      } catch (e) {
+        console.warn(`[morningBriefing] Geen Auth-gebruiker voor uid=${uid}:`, e.message);
+        return;
+      }
+      if (!email) return;
 
       // Agenda-events van vandaag ophalen
       const eventsSnap = await db
@@ -108,36 +129,50 @@ exports.morningBriefingV1 = functions
       const normalEvents = events.filter((e) => !isTrainingEvent(e));
       const training = events.find(isTrainingEvent);
 
-      // Berichtregels opbouwen
-      const lines = [];
-      lines.push(
-        normalEvents.length > 0
-          ? `📅 ${normalEvents.length} afspraak${normalEvents.length > 1 ? 'en' : ''} vandaag`
-          : '📅 Geen afspraken vandaag'
-      );
-      if (training) lines.push(`💪 Training: ${training.title}`);
-      if (weatherLine) lines.push(weatherLine);
+      // E-mail opbouwen
+      const agendaLines = normalEvents.length > 0
+        ? normalEvents.map((e) => `• ${e.time ? e.time + ' ' : ''}${e.title}`).join('\n')
+        : 'Geen afspraken vandaag.';
 
-      // FCM melding versturen
-      await fcm.send({
-        token,
-        notification: {
-          title: '☀️ Goedemorgen — Apex OS Briefing',
-          body: lines.join('\n'),
-        },
-        data: { type: 'morning-briefing', date: today },
-        webpush: {
-          notification: {
-            icon:    'https://apexos-a0163.web.app/favicon.svg',
-            badge:   'https://apexos-a0163.web.app/favicon.svg',
-            vibrate: [200, 100, 200],
-            tag:     'morning-briefing',
-          },
-          fcmOptions: { link: 'https://apexos-a0163.web.app/' },
-        },
+      const trainingLine = training
+        ? `\n💪 Training: ${training.title}`
+        : '\nGeen training gepland.';
+
+      const textBody = [
+        `Goedemorgen! Hier is je Apex OS briefing voor ${today}.`,
+        '',
+        weatherLine ? `🌡️ Weer: ${weatherLine}` : '',
+        '',
+        '📅 Agenda vandaag:',
+        agendaLines,
+        trainingLine,
+        '',
+        '— Apex OS',
+      ].filter((l) => l !== null).join('\n');
+
+      const htmlBody = `
+        <div style="font-family:sans-serif;max-width:480px;margin:0 auto;color:#1a1a1a">
+          <h2 style="margin-bottom:4px">☀️ Goedemorgen</h2>
+          <p style="color:#666;margin-top:0">${today}</p>
+          ${weatherLine ? `<p>🌡️ ${weatherLine}</p>` : ''}
+          <hr style="border:none;border-top:1px solid #eee;margin:16px 0"/>
+          <h3 style="margin-bottom:8px">📅 Agenda vandaag</h3>
+          <pre style="font-family:sans-serif;white-space:pre-wrap;margin:0">${agendaLines}</pre>
+          <p>${trainingLine.trim()}</p>
+          <hr style="border:none;border-top:1px solid #eee;margin:16px 0"/>
+          <p style="color:#999;font-size:12px">Apex OS — automatische briefing</p>
+        </div>
+      `;
+
+      await transporter.sendMail({
+        from: `"Apex OS" <${process.env.GMAIL_USER}>`,
+        to: email,
+        subject: `☀️ Apex OS Briefing — ${today}`,
+        text: textBody,
+        html: htmlBody,
       });
 
-      console.log(`[morningBriefing] Melding verstuurd naar uid=${uid}`);
+      console.log(`[morningBriefing] E-mail verstuurd naar ${email} (uid=${uid})`);
     });
 
     await Promise.allSettled(sends);
