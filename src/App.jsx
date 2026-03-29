@@ -582,28 +582,54 @@ export default function App() {
 
         if (neededTrainings === 0) return cleanedAgenda;
 
-        let availableDays = futureWeekDates.filter(date => !daysWithFixedTraining.includes(date)).map(date => {
-          const eventsOnDay = cleanedAgenda.filter(e => e.date === date && !isOccupiedByTraining(e) && !e.isAI);
-          return { date, eventsOnDay, score: eventsOnDay.length };
-        });
+        const selectBestDays = (candidateDates, needed, alreadyPlanned) => {
+          if (needed === 0) return [];
 
-        let selectedDays = [];
-        let tempDaysWithTraining = [...daysWithFixedTraining];
+          const scoreDays = (candidates, planned) => {
+            return candidates.map(date => {
+              const dayIndex = allTwoWeekDates.indexOf(date);
+              const eventsOnDay = cleanedAgenda.filter(e => e.date === date && !isOccupiedByTraining(e) && !e.isAI).length;
 
-        for (let i = 0; i < neededTrainings; i++) {
-          if (availableDays.length === 0) break;
-          availableDays.forEach(day => {
-            let penalty = 0;
-            const dayIndex = allTwoWeekDates.indexOf(day.date);
-            if (tempDaysWithTraining.includes(dayIndex > 0 ? allTwoWeekDates[dayIndex - 1] : null)) penalty += 1000;
-            if (tempDaysWithTraining.includes(dayIndex < 13 ? allTwoWeekDates[dayIndex + 1] : null)) penalty += 1000;
-            day.currentScore = day.score + penalty;
-          });
-          availableDays.sort((a, b) => a.currentScore - b.currentScore);
-          const bestDay = availableDays.shift(); 
-          selectedDays.push(bestDay); 
-          tempDaysWithTraining.push(bestDay.date);
-        }
+              let penalty = 0;
+              const prevDate = dayIndex > 0 ? allTwoWeekDates[dayIndex - 1] : null;
+              const nextDate = dayIndex < 13 ? allTwoWeekDates[dayIndex + 1] : null;
+              if (prevDate && planned.includes(prevDate)) penalty += 1000;
+              if (nextDate && planned.includes(nextDate)) penalty += 1000;
+
+              const weekPos = dayIndex % 7;
+              const spreadBonus = Math.abs(weekPos - 3) * 10;
+
+              return { date, score: eventsOnDay + penalty + spreadBonus };
+            });
+          };
+
+          const selected = [];
+          const planned = [...alreadyPlanned];
+          const remaining = [...candidateDates];
+
+          for (let i = 0; i < needed; i++) {
+            if (remaining.length === 0) break;
+            const scored = scoreDays(remaining, planned);
+            scored.sort((a, b) => a.score - b.score);
+            const best = scored[0];
+            selected.push({ date: best.date });
+            planned.push(best.date);
+            remaining.splice(remaining.indexOf(best.date), 1);
+          }
+
+          return selected;
+        };
+
+        // Select days for this week and next week separately
+        const thisWeekAvailable = futureWeekDates.filter(d => currentWeekDates.includes(d) && !daysWithFixedTraining.includes(d));
+        const nextWeekAvailable = nextWeekDates.filter(d => !daysWithFixedTraining.includes(d));
+
+        const thisWeekFixed = daysWithFixedTraining.filter(d => currentWeekDates.includes(d));
+        const nextWeekFixed = daysWithFixedTraining.filter(d => nextWeekDates.includes(d));
+
+        const selectedThisWeek = selectBestDays(thisWeekAvailable, neededThisWeek, thisWeekFixed);
+        const selectedNextWeek = selectBestDays(nextWeekAvailable, neededNextWeek, nextWeekFixed);
+        const selectedDays = [...selectedThisWeek, ...selectedNextWeek];
         
         let thisWeekSplitIndex = 0;
         let nextWeekSplitIndex = 0;
