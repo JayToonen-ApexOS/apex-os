@@ -847,6 +847,39 @@ export default function App() {
     }
   };
 
+  // Auto-hersync ICS agenda's bij reload
+  useEffect(() => {
+    if (!uid) return;
+    const providers = ['Apple', 'Andere Agenda'];
+    providers.forEach(async (provider) => {
+      const url = agendaUrls[provider];
+      const isConnected = connectedAgendas[provider];
+      if (!url || !isConnected) return;
+
+      const normalizedUrl = url.replace(/^webcal:\/\//i, 'https://');
+      try {
+        const response = await fetch(`/api/proxy-ics?url=${encodeURIComponent(normalizedUrl)}`, {
+          signal: AbortSignal.timeout(10000),
+        });
+        if (!response.ok) return;
+        const icsText = await response.text();
+        if (!icsText.includes('BEGIN:VCALENDAR')) return;
+        const parsedEvents = parseICSData(icsText, provider);
+        if (parsedEvents.length === 0) return;
+
+        setAgendaEvents(prev => {
+          const filtered = prev.filter(e => e.type !== provider);
+          return [...filtered, ...parsedEvents].sort((a, b) => {
+            const dc = a.date.localeCompare(b.date);
+            return dc !== 0 ? dc : a.time.localeCompare(b.time);
+          });
+        });
+      } catch (e) {
+        console.error('Auto-hersync mislukt voor', provider, e);
+      }
+    });
+  }, [uid, connectedAgendas, agendaUrls]);
+
   const handleDisconnectAgenda = (provider) => {
     setConnectedAgendas(prev => ({ ...prev, [provider]: false }));
     setAgendaEvents(prev => prev.filter(event => event.type !== provider));
