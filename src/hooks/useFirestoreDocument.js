@@ -1,44 +1,36 @@
 import { useState, useEffect, useRef } from 'react';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { db } from '../firebase';
 
 export function useFirestoreDocument(docPath, initialValue = {}) {
-  const [state, setState] = useState(initialValue);
-  const docPathRef = useRef(docPath);
-  const hasFetched = useRef(false);
+  const storageKey = `apex_${docPath ?? 'null'}`;
 
+  const [state, setState] = useState(() => {
+    if (!docPath) return initialValue;
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored) return { ...initialValue, ...JSON.parse(stored) };
+    } catch (e) {}
+    return initialValue;
+  });
+
+  // Re-read from localStorage when docPath changes (uid comes in)
   useEffect(() => {
-    docPathRef.current = docPath;
+    if (!docPath) return;
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored) setState({ ...initialValue, ...JSON.parse(stored) });
+    } catch (e) {}
   }, [docPath]);
 
-  // One-time read on mount (or when docPath becomes available)
-  useEffect(() => {
-    if (!docPath || hasFetched.current) return;
-    hasFetched.current = true;
-
-    const ref = doc(db, docPath);
-    getDoc(ref)
-      .then((snap) => {
-        if (snap.exists()) {
-          setState({ ...initialValue, ...snap.data() });
-        }
-      })
-      .catch(e => console.error('Firestore read failed:', docPath, e));
-  }, [docPath]);
-
-  const setValue = async (newValueOrUpdater) => {
-    const currentPath = docPathRef.current;
-
+  const setValue = (newValueOrUpdater) => {
     setState(prev => {
       const newValue = typeof newValueOrUpdater === 'function'
         ? newValueOrUpdater(prev)
         : { ...prev, ...newValueOrUpdater };
-
-      if (currentPath) {
-        setDoc(doc(db, currentPath), newValue, { merge: true })
-          .catch(e => console.error('Firestore write failed:', currentPath, e));
+      if (docPath) {
+        try {
+          localStorage.setItem(storageKey, JSON.stringify(newValue));
+        } catch (e) {}
       }
-
       return newValue;
     });
   };
