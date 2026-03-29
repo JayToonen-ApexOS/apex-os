@@ -129,6 +129,7 @@ export default function App() {
   const hasAutoPlannedRef = useRef(false);
   const lastAgendaLengthRef = useRef(0);
   const lastPlannedWeekRef = useRef(null);
+  const globalSplitIndexRef = useRef(0);
   
   const [projects, setProjects] = useFirestoreCollection(uid ? `users/${uid}/projects` : null, initialProjects);
   const [habits, setHabits] = useFirestoreCollection(uid ? `users/${uid}/habits` : null, initialHabits);
@@ -635,7 +636,11 @@ export default function App() {
         const allExistingTrainings = cleanedAgenda
           .filter(e => isOccupiedByTraining(e) && allTwoWeekDates.includes(e.date))
           .sort((a, b) => a.date.localeCompare(b.date));
-        let globalSplitIndex = allExistingTrainings.length % splits.length;
+        // Count ALL training events ever planned (across all weeks in agenda) to determine rotation position
+        const allTrainingsEver = prevAgenda
+          .filter(e => isOccupiedByTraining(e))
+          .sort((a, b) => a.date.localeCompare(b.date));
+        let globalSplitIndex = allTrainingsEver.length % splits.length;
 
         // Sort selectedDays chronologically so rotation is in date order
         const sortedSelectedDays = [...selectedDays].sort((a, b) => a.date.localeCompare(b.date));
