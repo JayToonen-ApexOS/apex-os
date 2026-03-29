@@ -631,29 +631,18 @@ export default function App() {
         const selectedNextWeek = selectBestDays(nextWeekAvailable, neededNextWeek, nextWeekFixed);
         const selectedDays = [...selectedThisWeek, ...selectedNextWeek];
         
-        let thisWeekSplitIndex = 0;
-        let nextWeekSplitIndex = 0;
-
-        const thisWeekTrainingTitles = cleanedAgenda
-          .filter(e => isOccupiedByTraining(e) && currentWeekDates.includes(e.date))
+        // Split rotation is continuous across both weeks — count ALL existing training events in order
+        const allExistingTrainings = cleanedAgenda
+          .filter(e => isOccupiedByTraining(e) && allTwoWeekDates.includes(e.date))
           .sort((a, b) => a.date.localeCompare(b.date));
-        thisWeekSplitIndex = thisWeekTrainingTitles.length % splits.length;
+        let globalSplitIndex = allExistingTrainings.length % splits.length;
 
-        const nextWeekTrainingTitles = cleanedAgenda
-          .filter(e => isOccupiedByTraining(e) && nextWeekDates.includes(e.date))
-          .sort((a, b) => a.date.localeCompare(b.date));
-        nextWeekSplitIndex = nextWeekTrainingTitles.length % splits.length;
+        // Sort selectedDays chronologically so rotation is in date order
+        const sortedSelectedDays = [...selectedDays].sort((a, b) => a.date.localeCompare(b.date));
 
-        const newEvents = selectedDays.map((dayObj) => {
-          const isNextWeek = nextWeekDates.includes(dayObj.date);
-          let splitIndex;
-          if (isNextWeek) {
-            splitIndex = nextWeekSplitIndex;
-            nextWeekSplitIndex = (nextWeekSplitIndex + 1) % splits.length;
-          } else {
-            splitIndex = thisWeekSplitIndex;
-            thisWeekSplitIndex = (thisWeekSplitIndex + 1) % splits.length;
-          }
+        const newEvents = sortedSelectedDays.map((dayObj) => {
+          const splitIndex = globalSplitIndex;
+          globalSplitIndex = (globalSplitIndex + 1) % splits.length;
           return {
             id: Date.now() + Math.random(),
             date: dayObj.date,
