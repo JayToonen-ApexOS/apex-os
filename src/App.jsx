@@ -574,7 +574,11 @@ export default function App() {
 
         const cleanedAgenda = prevAgenda.filter(e => !(e.isAI && futureWeekDates.includes(e.date)));
         const daysWithFixedTraining = cleanedAgenda.filter(e => isOccupiedByTraining(e) && allTwoWeekDates.includes(e.date)).map(e => e.date);
-        const neededTrainings = Math.max(0, (trainingDaysPerWeek * 2) - new Set(daysWithFixedTraining).size);
+        const daysWithTrainingThisWeek = new Set(daysWithFixedTraining.filter(d => currentWeekDates.includes(d))).size;
+        const daysWithTrainingNextWeek = new Set(daysWithFixedTraining.filter(d => nextWeekDates.includes(d))).size;
+        const neededThisWeek = Math.max(0, trainingDaysPerWeek - daysWithTrainingThisWeek);
+        const neededNextWeek = Math.max(0, trainingDaysPerWeek - daysWithTrainingNextWeek);
+        const neededTrainings = neededThisWeek + neededNextWeek;
 
         if (neededTrainings === 0) return cleanedAgenda;
 
@@ -601,15 +605,39 @@ export default function App() {
           tempDaysWithTraining.push(bestDay.date);
         }
         
-        const newEvents = selectedDays.map((dayObj, i) => ({ 
-          id: Date.now() + Math.random(), 
-          date: dayObj.date, 
-          time: '18:00', 
-          title: splits[i % splits.length], 
-          type: 'Training', 
-          isAI: true, 
-          completed: false 
-        }));
+        let thisWeekSplitIndex = 0;
+        let nextWeekSplitIndex = 0;
+
+        const thisWeekTrainingTitles = cleanedAgenda
+          .filter(e => isOccupiedByTraining(e) && currentWeekDates.includes(e.date))
+          .sort((a, b) => a.date.localeCompare(b.date));
+        thisWeekSplitIndex = thisWeekTrainingTitles.length % splits.length;
+
+        const nextWeekTrainingTitles = cleanedAgenda
+          .filter(e => isOccupiedByTraining(e) && nextWeekDates.includes(e.date))
+          .sort((a, b) => a.date.localeCompare(b.date));
+        nextWeekSplitIndex = nextWeekTrainingTitles.length % splits.length;
+
+        const newEvents = selectedDays.map((dayObj) => {
+          const isNextWeek = nextWeekDates.includes(dayObj.date);
+          let splitIndex;
+          if (isNextWeek) {
+            splitIndex = nextWeekSplitIndex;
+            nextWeekSplitIndex = (nextWeekSplitIndex + 1) % splits.length;
+          } else {
+            splitIndex = thisWeekSplitIndex;
+            thisWeekSplitIndex = (thisWeekSplitIndex + 1) % splits.length;
+          }
+          return {
+            id: Date.now() + Math.random(),
+            date: dayObj.date,
+            time: '18:00',
+            title: splits[splitIndex],
+            type: 'Training',
+            isAI: true,
+            completed: false
+          };
+        });
         
         if (!isSilent) setTimeout(() => triggerToast(`Slim herpland: ${selectedDays.length} missende sessie(s) optimaal ingepland!`), 100);
         return [...cleanedAgenda, ...newEvents].sort((a, b) => a.date.localeCompare(b.date));
