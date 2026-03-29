@@ -6,11 +6,11 @@ import LoginScreen from './components/LoginScreen';
 import { 
   CheckCircle2, Circle, Sparkles, Target, FolderKanban, Bell,
   Activity, Plus, Send, Loader2, Clock, Trophy, TrendingUp,
-  CheckSquare, Square, ChevronDown, ChevronUp, Heart, User, Sun, 
-  CloudSun, CloudRain, BookOpen, CalendarDays, Coffee, 
-  Dumbbell, Flame, MapPin, Menu, X, Command, Camera, FileText, 
+  CheckSquare, Square, ChevronDown, ChevronUp, Heart,
+  CloudRain, BookOpen, CalendarDays,
+  Dumbbell, Flame, MapPin, Menu, X, Command, Camera, FileText,
   ArrowRight, Timer, Play, Pause, RotateCcw, Edit3, Triangle,
-  Zap, Quote, BookMarked, Smile, Meh, Frown, Keyboard, Trash2, RefreshCw, Settings, Link as LinkIcon, Calendar, ChevronLeft, ChevronRight,
+  Zap, Quote, BookMarked, Smile, Meh, Frown, Trash2, RefreshCw, Settings, Link as LinkIcon, Calendar, ChevronLeft, ChevronRight,
   Info, Medal, Award, Utensils, PieChart, BrainCircuit
 } from 'lucide-react';
 
@@ -110,7 +110,7 @@ const getAIGeneratedSteps = (title, type) => {
 
 export default function App() {
   // --- AUTH ---
-  const { user, loading: authLoading, signIn, signOut } = useAuth();
+  const { user, loading: authLoading, signIn } = useAuth();
   const uid = user?.uid ?? null;
 
 
@@ -849,13 +849,12 @@ export default function App() {
 
   // Auto-hersync ICS agenda's bij reload
   useEffect(() => {
-    if (!uid) return;
+    if (!uid || !agendaUrls || !connectedAgendas) return;
     const providers = ['Apple', 'Andere Agenda'];
     providers.forEach(async (provider) => {
-      const url = agendaUrls[provider];
+      const url = (agendaUrls[provider] || '').trim();
       const isConnected = connectedAgendas[provider];
       if (!url || !isConnected) return;
-
       const normalizedUrl = url.replace(/^webcal:\/\//i, 'https://');
       try {
         const response = await fetch(`/api/proxy-ics?url=${encodeURIComponent(normalizedUrl)}`, {
@@ -866,7 +865,6 @@ export default function App() {
         if (!icsText.includes('BEGIN:VCALENDAR')) return;
         const parsedEvents = parseICSData(icsText, provider);
         if (parsedEvents.length === 0) return;
-
         setAgendaEvents(prev => {
           const filtered = prev.filter(e => e.type !== provider);
           return [...filtered, ...parsedEvents].sort((a, b) => {
@@ -878,7 +876,7 @@ export default function App() {
         console.error('Auto-hersync mislukt voor', provider, e);
       }
     });
-  }, [uid, connectedAgendas, agendaUrls]);
+  }, [uid]);
 
   const handleDisconnectAgenda = (provider) => {
     setConnectedAgendas(prev => ({ ...prev, [provider]: false }));
