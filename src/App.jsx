@@ -1041,21 +1041,21 @@ export default function App() {
   return (
     <div className={`flex h-screen ${isYasminMode ? 'bg-[#0d0010]' : 'bg-black'} text-white font-sans overflow-hidden`} style={{ fontFamily: "'Inter', system-ui, -apple-system, sans-serif" }}>
       <style dangerouslySetInnerHTML={{__html: `
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
         * { box-sizing: border-box; }
+        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
         ::selection { background: rgba(0,212,255,0.2); }
         .custom-scrollbar::-webkit-scrollbar { width: 2px; height: 2px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(255,255,255,0.15); border-radius: 99px; }
-        @media (max-width: 1024px) { .custom-scrollbar::-webkit-scrollbar { width: 0; } }
+        @media (max-width: 768px) { .custom-scrollbar::-webkit-scrollbar { width: 0; } }
         @keyframes scan {
           0% { transform: translateY(-100%); opacity: 0; }
           10% { opacity: 1; }
           90% { opacity: 1; }
           100% { transform: translateY(400px); opacity: 0; }
         }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
         .safe-top { padding-top: env(safe-area-inset-top); }
-        .pt-safe-main { padding-top: calc(56px + env(safe-area-inset-top)); }
         .pb-safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
         input[type=number]::-webkit-inner-spin-button,
         input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
@@ -1063,34 +1063,19 @@ export default function App() {
         input[type=time]::-webkit-calendar-picker-indicator { filter: invert(1) opacity(0.3); }
       `}} />
 
-      {/* MOBILE TOP BAR */}
-      <div className={`lg:hidden fixed top-0 left-0 right-0 z-40 border-b safe-top ${isYasminMode ? 'bg-[#0d0010]/95 border-white/[0.06]' : 'bg-black/95 border-white/[0.06]'}`} style={{ backdropFilter: 'blur(20px)' }}>
-        <div className="h-14 flex items-center justify-between px-5">
-          <div className="flex items-center gap-2">
-            <Triangle className={`w-4 h-4 fill-current ${isYasminMode ? 'text-purple-400' : 'text-[#00D4FF]'}`} />
-            <span className="font-black tracking-[0.15em] text-sm text-white">APEX</span>
-          </div>
-          <button onClick={() => setIsMobileMenuOpen(true)} className="p-2 rounded-lg text-white/50 hover:text-white hover:bg-white/[0.06] transition-all duration-150">
-            <Menu className="w-5 h-5" />
-          </button>
-        </div>
-      </div>
-
+      {/* Mobile overlay for sidebar (unused but kept for safety) */}
       {isMobileMenuOpen && (
-        <div className="fixed inset-0 bg-black/70 z-[60] lg:hidden" style={{ backdropFilter: 'blur(4px)' }} onClick={() => setIsMobileMenuOpen(false)} />
+        <div className="fixed inset-0 bg-black/70 z-[60] md:hidden" style={{ backdropFilter: 'blur(4px)' }} onClick={() => setIsMobileMenuOpen(false)} />
       )}
 
-      {/* SIDEBAR */}
-      <div className={`fixed inset-y-0 left-0 z-[70] w-[200px] border-r flex flex-col transform transition-transform duration-300 ease-out lg:translate-x-0 lg:static ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} ${isYasminMode ? 'bg-[#0d0010] border-white/[0.06]' : 'bg-[#000] border-white/[0.06]'}`}>
+      {/* SIDEBAR — desktop only (md+) */}
+      <div className={`hidden md:flex fixed inset-y-0 left-0 z-30 w-[220px] border-r flex-col ${isYasminMode ? 'bg-[#0d0010] border-white/[0.06]' : 'bg-black border-white/[0.06]'}`}>
         {/* Logo */}
-        <div className="h-16 flex items-center justify-between px-5 shrink-0">
+        <div className="h-16 flex items-center px-5 shrink-0">
           <div className="flex items-center gap-2.5">
             <Triangle className={`w-4 h-4 fill-current ${isYasminMode ? 'text-purple-400' : 'text-[#00D4FF]'}`} />
             <span className="font-black tracking-[0.15em] text-sm text-white">APEX</span>
           </div>
-          <button onClick={() => setIsMobileMenuOpen(false)} className="lg:hidden p-1.5 rounded-md text-white/40 hover:text-white hover:bg-white/[0.06] transition-all duration-150">
-            <X className="w-4 h-4" />
-          </button>
         </div>
 
         {/* Primary nav */}
@@ -1112,7 +1097,7 @@ export default function App() {
         {/* Settings pinned at bottom */}
         <div className="p-3 border-t border-white/[0.06] shrink-0">
           <button
-            onClick={() => { setActiveTab('settings'); setIsMobileMenuOpen(false); }}
+            onClick={() => setActiveTab('settings')}
             className={`w-full flex items-center justify-center p-2.5 rounded-lg transition-all duration-150 ${
               activeTab === 'settings' ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white/80 hover:bg-white/[0.04]'
             }`}
@@ -1123,8 +1108,10 @@ export default function App() {
       </div>
 
       {/* MAIN CONTENT AREA */}
-      <div className={`flex-1 flex flex-col h-full relative overflow-hidden pt-safe-main lg:pt-0 ${isYasminMode ? 'bg-[#0d0010]' : 'bg-black'}`}>
-        <main ref={scrollContainerRef} className="flex-1 overflow-y-auto px-4 py-6 sm:px-8 sm:py-8 lg:px-10 lg:py-10 scroll-smooth relative custom-scrollbar pb-40 lg:pb-32">
+      <div className={`flex flex-col h-screen w-full relative overflow-hidden md:ml-[220px] ${isYasminMode ? 'bg-[#0d0010]' : 'bg-black'}`}>
+        <main ref={scrollContainerRef} className="flex-1 overflow-y-auto scroll-smooth custom-scrollbar" style={{ padding: '0' }}>
+          {/* Inner padding: 16px mobile, 32px 40px desktop. Bottom: 80px mobile (nav), 32px desktop */}
+          <div className="px-4 py-4 pb-24 md:px-10 md:py-8 md:pb-8">
           <div className="max-w-5xl mx-auto w-full flex flex-col min-h-full">
             {activeTab === 'hub' && <Hub isYasminMode={isYasminMode} todaysEvents={todaysEvents} currentSession={currentSession} weather={weather} trainingEvents={trainingEvents} trainingDaysPerWeek={trainingDaysPerWeek} todayISO={todayISO} habits={habits} scratchpad={scratchpad} setScratchpad={setScratchpad} agendaEvents={agendaEvents} setActiveTab={setActiveTab} toggleHabit={toggleHabit} toggleAgendaEventCompleted={toggleAgendaEventCompleted} setSelectedEvent={setSelectedEvent} getEventColor={getEventColor} currentTime={currentTime} currentDateFormatted={currentDateFormatted} pendingTasks={pendingTasks} />}
             {activeTab === 'agenda' && <Agenda todayISO={todayISO} agendaEvents={agendaEvents} connectedAgendas={connectedAgendas} newEventTitle={newEventTitle} setNewEventTitle={setNewEventTitle} newEventDate={newEventDate} setNewEventDate={setNewEventDate} newEventTime={newEventTime} setNewEventTime={setNewEventTime} newEventSource={newEventSource} setNewEventSource={setNewEventSource} newEventLocation={newEventLocation} setNewEventLocation={setNewEventLocation} newEventDescription={newEventDescription} setNewEventDescription={setNewEventDescription} currentMonth={currentMonth} currentYear={currentYear} daysInMonth={daysInMonth} startOffset={startOffset} monthNames={monthNames} handleAddAgendaEvent={handleAddAgendaEvent} handlePrevMonth={handlePrevMonth} handleNextMonth={handleNextMonth} setSelectedEvent={setSelectedEvent} getEventColor={getEventColor} />}
@@ -1192,10 +1179,11 @@ export default function App() {
               </div>
             )}
           </div>
+          </div>{/* end padding wrapper */}
         </main>
 
         {/* COMMAND BAR */}
-        <div className="absolute bottom-20 lg:bottom-5 left-0 right-0 z-50 px-4 lg:px-8 pointer-events-none flex justify-center">
+        <div className="absolute bottom-20 md:bottom-5 left-0 right-0 z-50 px-4 md:px-8 pointer-events-none flex justify-center">
           <form onSubmit={handleAISubmit} className="w-full max-w-xl pointer-events-auto relative">
             {lastAction && (
               <div className="absolute bottom-[calc(100%+10px)] left-1/2 -translate-x-1/2 text-xs font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 rounded-lg flex items-center gap-2 animate-in slide-in-from-bottom-2 whitespace-nowrap z-[60]" style={{ backdropFilter: 'blur(16px)' }}>
@@ -1222,42 +1210,41 @@ export default function App() {
 
       </div>
 
-      {/* MOBILE BOTTOM NAV */}
-      <div className={`lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t pb-safe-bottom ${isYasminMode ? 'bg-[#0d0010]/95 border-white/[0.06]' : 'bg-black/95 border-white/[0.06]'}`} style={{ backdropFilter: 'blur(20px)' }}>
-        <div className="flex items-center h-14">
+      {/* MOBILE BOTTOM NAV — hidden on md+ */}
+      <div
+        className={`md:hidden fixed bottom-0 left-0 right-0 z-50 border-t ${isYasminMode ? 'bg-[#0d0010]/90 border-white/[0.06]' : 'bg-black/90 border-white/[0.06]'}`}
+        style={{ backdropFilter: 'blur(20px)', paddingBottom: 'env(safe-area-inset-bottom)' }}
+      >
+        <div className="flex items-stretch h-16">
           {[
-            { id: 'hub',      icon: <Command className="w-[18px] h-[18px]" />,      label: 'Hub'      },
-            { id: 'agenda',   icon: <Calendar className="w-[18px] h-[18px]" />,     label: 'Agenda'   },
-            { id: 'focus',    icon: <Timer className="w-[18px] h-[18px]" />,        label: 'Focus'    },
-            { id: 'projects', icon: <FolderKanban className="w-[18px] h-[18px]" />, label: 'Projects' },
+            { id: 'hub',      icon: <Command className="w-6 h-6" />,      label: 'Hub'      },
+            { id: 'agenda',   icon: <Calendar className="w-6 h-6" />,     label: 'Agenda'   },
+            { id: 'focus',    icon: <Timer className="w-6 h-6" />,        label: 'Focus'    },
+            { id: 'projects', icon: <FolderKanban className="w-6 h-6" />, label: 'Projects' },
           ].map(({ id, icon, label }) => {
             const isActive = activeTab === id;
+            const accent = isYasminMode ? 'text-purple-400' : 'text-[#00D4FF]';
             return (
               <button
                 key={id}
                 onClick={() => { setActiveTab(id); setIsMoreMenuOpen(false); }}
-                className="flex-1 flex flex-col items-center justify-center gap-1 py-2 transition-all duration-150"
+                className="flex-1 flex flex-col items-center justify-center gap-1 transition-all duration-150"
               >
-                <span className={isActive ? (isYasminMode ? 'text-purple-400' : 'text-[#00D4FF]') : 'text-white/30'}>
-                  {icon}
-                </span>
-                <span className={`text-[9px] font-semibold tracking-wider ${isActive ? 'text-white/70' : 'text-white/20'}`}>{label}</span>
-                {isActive && <div className={`w-1 h-1 rounded-full ${isYasminMode ? 'bg-purple-400' : 'bg-[#00D4FF]'}`} />}
+                <span className={isActive ? accent : 'text-white/30'}>{icon}</span>
+                <span className={`text-[10px] font-semibold ${isActive ? accent : 'text-white/25'}`}>{label}</span>
               </button>
             );
           })}
           <button
             onClick={() => setIsMoreMenuOpen(v => !v)}
-            className="flex-1 flex flex-col items-center justify-center gap-1 py-2 transition-all duration-150"
+            className="flex-1 flex flex-col items-center justify-center gap-1 transition-all duration-150"
           >
             {(() => {
               const isActive = isMoreMenuOpen || ['forge','nutrition','habits','logbook','achievements','settings'].includes(activeTab);
+              const accent = isYasminMode ? 'text-purple-400' : 'text-[#00D4FF]';
               return (<>
-                <span className={isActive ? (isYasminMode ? 'text-purple-400' : 'text-[#00D4FF]') : 'text-white/30'}>
-                  <Menu className="w-[18px] h-[18px]" />
-                </span>
-                <span className={`text-[9px] font-semibold tracking-wider ${isActive ? 'text-white/70' : 'text-white/20'}`}>Meer</span>
-                {isActive && <div className={`w-1 h-1 rounded-full ${isYasminMode ? 'bg-purple-400' : 'bg-[#00D4FF]'}`} />}
+                <span className={isActive ? accent : 'text-white/30'}><Menu className="w-6 h-6" /></span>
+                <span className={`text-[10px] font-semibold ${isActive ? accent : 'text-white/25'}`}>Meer</span>
               </>);
             })()}
           </button>
@@ -1267,8 +1254,8 @@ export default function App() {
       {/* MORE OVERFLOW SHEET */}
       {isMoreMenuOpen && (
         <>
-          <div className="lg:hidden fixed inset-0 z-[55] bg-black/60" style={{ backdropFilter: 'blur(4px)' }} onClick={() => setIsMoreMenuOpen(false)} />
-          <div className={`lg:hidden fixed bottom-14 left-0 right-0 z-[56] border-t rounded-t-2xl pb-safe-bottom ${isYasminMode ? 'bg-[#0d0010] border-white/[0.06]' : 'bg-[#0a0a0a] border-white/[0.06]'}`}>
+          <div className="md:hidden fixed inset-0 z-[55] bg-black/60" style={{ backdropFilter: 'blur(4px)' }} onClick={() => setIsMoreMenuOpen(false)} />
+          <div className={`md:hidden fixed bottom-16 left-0 right-0 z-[56] border-t rounded-t-2xl`} style={{ paddingBottom: 'env(safe-area-inset-bottom)', background: isYasminMode ? '#0d0010' : '#0a0a0a', borderColor: 'rgba(255,255,255,0.06)' }}>
             <div className="flex items-center justify-between px-5 pt-4 pb-3">
               <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/30">Meer</span>
               <button onClick={() => setIsMoreMenuOpen(false)} className="p-1.5 rounded-lg text-white/30 hover:text-white/60 hover:bg-white/[0.04] transition-all duration-150">

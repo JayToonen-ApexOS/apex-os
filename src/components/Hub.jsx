@@ -89,14 +89,18 @@ export default function Hub({
   const cardStyle = {
     background: '#0a0a0a',
     border: '1px solid rgba(255,255,255,0.06)',
+    borderRadius: 12,
+  };
+  const cardStyleDesktop = {
+    ...cardStyle,
     borderRadius: 14,
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingBottom: 24, animation: 'fadeIn 200ms ease' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingBottom: 8, animation: 'fadeIn 200ms ease' }}>
 
       {/* ── HEADER ── */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
+      <div className="flex items-start justify-between gap-4">
         {/* Left: date + greeting */}
         <div>
           <p style={{
@@ -109,8 +113,7 @@ export default function Hub({
           }}>
             {currentDateFormatted}
           </p>
-          <h1 style={{
-            fontSize: 42,
+          <h1 className="text-3xl md:text-[42px]" style={{
             fontWeight: 800,
             letterSpacing: '-0.03em',
             color: '#ffffff',
@@ -122,15 +125,17 @@ export default function Hub({
         </div>
 
         {/* Right: clock + weather */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10, flexShrink: 0 }}>
-          <span style={{
-            fontFamily: "'JetBrains Mono', monospace",
-            fontSize: 32,
-            fontWeight: 500,
-            color: accent,
-            lineHeight: 1,
-            letterSpacing: '-0.02em',
-          }}>
+        <div className="flex flex-col items-end shrink-0" style={{ gap: 10 }}>
+          <span
+            className="text-2xl md:text-[32px]"
+            style={{
+              fontFamily: "'JetBrains Mono', monospace",
+              fontWeight: 500,
+              color: accent,
+              lineHeight: 1,
+              letterSpacing: '-0.02em',
+            }}
+          >
             {currentTime}
           </span>
           <div style={{
@@ -151,12 +156,10 @@ export default function Hub({
       </div>
 
       {/* ── AI BRIEFING CARD ── */}
-      <div style={{
+      <div className="flex items-start" style={{
         ...cardStyle,
         borderLeft: `2px solid ${accent}`,
-        padding: '16px 20px',
-        display: 'flex',
-        alignItems: 'flex-start',
+        padding: '14px 16px',
         gap: 14,
       }}>
         <div style={{
@@ -188,7 +191,7 @@ export default function Hub({
       </div>
 
       {/* ── TODAY'S AGENDA CARD ── */}
-      <div style={{ ...cardStyle, padding: 20 }}>
+      <div style={{ ...cardStyle, padding: 16 }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -340,7 +343,7 @@ export default function Hub({
       </div>
 
       {/* ── BOTTOM GRID: FOCUS + HABITS ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+      <div className="grid grid-cols-1 md:grid-cols-2" style={{ gap: 16 }}>
 
         {/* FOCUS CARD */}
         <div style={{ ...cardStyle, padding: 20, position: 'relative', overflow: 'hidden' }}>
