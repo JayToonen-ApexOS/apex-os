@@ -1,8 +1,20 @@
 import React from 'react';
-import {
-  Settings as SettingsIcon, Heart, Activity, Dumbbell, CheckCircle2,
-  RefreshCw, LinkIcon as LinkIconLucide, Loader2, Link as LinkIcon
-} from 'lucide-react';
+import { Heart, Activity, Dumbbell, CheckCircle2, RefreshCw, Loader2, Link as LinkIcon, Settings as SettingsIcon } from 'lucide-react';
+
+const card = 'rounded-xl border border-white/[0.06] bg-[#0a0a0a] p-5';
+const input = 'w-full bg-[#111] border border-white/[0.08] rounded-lg px-3 py-2.5 text-white text-sm outline-none focus:border-white/25 transition-all duration-150 placeholder-white/20';
+const fieldLabel = 'block text-[10px] font-bold text-white/30 uppercase tracking-[0.1em] mb-1.5';
+const sectionTitle = 'font-bold text-white text-sm mb-1 flex items-center gap-2';
+const sectionSub = 'text-xs text-white/40 mb-5 leading-relaxed';
+
+function Toggle({ checked, onChange }) {
+  return (
+    <label className="relative inline-flex items-center cursor-pointer shrink-0">
+      <input type="checkbox" checked={checked} onChange={onChange} className="sr-only peer" />
+      <div className="w-9 h-5 bg-white/10 rounded-full peer peer-checked:bg-[#00D4FF] after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4" />
+    </label>
+  );
+}
 
 export default function Settings({
   isYasminMode, setIsYasminMode, healthStats, setHealthStats, trainingGoal,
@@ -14,63 +26,56 @@ export default function Settings({
   handleAIAutoPlan, getEventColor
 }) {
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <h2 className="text-3xl font-bold text-zinc-100 flex items-center gap-3">
-        <SettingsIcon className="text-cyan-400" /> Settings
-      </h2>
+    <div className="space-y-5 animate-in fade-in duration-200">
+      <div>
+        <h2 className="text-2xl font-black text-white tracking-tight">Settings</h2>
+        <p className="text-sm text-white/40 mt-0.5">Configureer je Apex OS.</p>
+      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
 
-        <div className="flex flex-col gap-6 w-full">
-          {/* PERSONALISATIE (YASMIN MODUS) */}
-          <div className="bg-zinc-900 rounded-3xl p-6 md:p-8 border border-zinc-800 shadow-xl w-full">
-            <h3 className="font-bold text-xl text-zinc-100 mb-2 flex items-center gap-2">
-              <Heart className="w-5 h-5 text-rose-500"/> Personalisatie
-            </h3>
-            <p className="text-zinc-400 mb-6 text-sm leading-relaxed">Pas de look en feel van Apex OS aan naar jouw wensen.</p>
+        {/* Left column */}
+        <div className="flex flex-col gap-4">
 
-            <div className="flex items-center justify-between bg-zinc-950/50 border border-zinc-800 p-4 rounded-xl transition-all">
+          {/* Personalisation */}
+          <div className={card}>
+            <h3 className={sectionTitle}><Heart className="w-4 h-4 text-rose-400" /> Personalisatie</h3>
+            <p className={sectionSub}>Pas de look en feel aan.</p>
+            <div className="flex items-center justify-between bg-white/[0.03] border border-white/[0.06] p-3.5 rounded-lg">
               <div>
-                <h4 className="font-bold text-zinc-200 flex items-center gap-2">Yasmin Modus ✨</h4>
-                <p className="text-xs text-zinc-500 mt-1">Transformeer Apex in een gezellige, paarse omgeving speciaal voor Yasmin.</p>
+                <p className="text-sm font-semibold text-white">Yasmin Modus</p>
+                <p className="text-xs text-white/35 mt-0.5">Paarse thema voor Yasmin.</p>
               </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" checked={isYasminMode} onChange={(e) => setIsYasminMode(e.target.checked)} className="sr-only peer" />
-                <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-500"></div>
-              </label>
+              <Toggle checked={isYasminMode} onChange={e => setIsYasminMode(e.target.checked)} />
             </div>
           </div>
 
-          {/* TRAININGS DOEL & BIOMETRICS */}
-          <div className="bg-zinc-900 rounded-3xl p-6 md:p-8 border border-zinc-800 shadow-xl w-full">
-            <h3 className="font-bold text-xl text-zinc-100 mb-2 flex items-center gap-2">
-              <Activity className="w-5 h-5 text-cyan-500"/> Biometrics & Fysiek Doel
-            </h3>
-            <p className="text-zinc-400 mb-6 text-sm leading-relaxed">Deze data gebruikt de AI om je voeding-targets en training te personaliseren.</p>
-
-            <div className="space-y-4">
-              <div className="bg-zinc-950 p-4 rounded-2xl border border-zinc-800/50">
-                <label className="block text-xs font-bold text-zinc-500 uppercase mb-2">Huidig Trainingsdoel</label>
-                <select value={trainingGoal} onChange={e => setTrainingGoal(e.target.value)} className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-zinc-200 outline-none focus:border-cyan-500 text-sm">
-                  <option value="Spieropbouw (Bulk)">Spieropbouw (Bulk) - 200/300 kcal overschot</option>
-                  <option value="Droogtrainen (Cut)">Droogtrainen (Cut) - Focus op spierbehoud</option>
-                  <option value="Onderhoud">Onderhoud - Gewicht stabiliseren</option>
+          {/* Biometrics */}
+          <div className={card}>
+            <h3 className={sectionTitle}><Activity className="w-4 h-4 text-[#00D4FF]" /> Biometrics & Doel</h3>
+            <p className={sectionSub}>De AI gebruikt deze data voor gepersonaliseerde targets.</p>
+            <div className="space-y-3">
+              <div>
+                <label className={fieldLabel}>Trainingsdoel</label>
+                <select value={trainingGoal} onChange={e => setTrainingGoal(e.target.value)} className={input + ' text-white/70'}>
+                  <option value="Spieropbouw (Bulk)">Spieropbouw (Bulk)</option>
+                  <option value="Droogtrainen (Cut)">Droogtrainen (Cut)</option>
+                  <option value="Onderhoud">Onderhoud</option>
                 </select>
               </div>
-
-              <div className="flex gap-4">
-                <div className="flex-1 bg-zinc-950 p-4 rounded-2xl border border-zinc-800/50">
-                  <label className="block text-xs font-bold text-zinc-500 uppercase mb-1">Gewicht</label>
+              <div className="flex gap-3">
+                <div className="flex-1 bg-[#111] border border-white/[0.08] rounded-lg p-3">
+                  <label className={fieldLabel}>Gewicht</label>
                   <div className="flex items-baseline gap-1">
-                    <input type="number" value={healthStats.weight} onChange={(e) => setHealthStats({...healthStats, weight: e.target.value})} className="w-full bg-transparent text-2xl font-black text-white outline-none" />
-                    <span className="text-zinc-500 font-bold">kg</span>
+                    <input type="number" value={healthStats.weight} onChange={e => setHealthStats({ ...healthStats, weight: e.target.value })} className="w-full bg-transparent text-xl font-black text-white outline-none" />
+                    <span className="text-white/30 text-sm font-bold">kg</span>
                   </div>
                 </div>
-                <div className="flex-1 bg-zinc-950 p-4 rounded-2xl border border-zinc-800/50">
-                  <label className="block text-xs font-bold text-zinc-500 uppercase mb-1">Lengte</label>
+                <div className="flex-1 bg-[#111] border border-white/[0.08] rounded-lg p-3">
+                  <label className={fieldLabel}>Lengte</label>
                   <div className="flex items-baseline gap-1">
-                    <input type="number" value={healthStats.height} onChange={(e) => setHealthStats({...healthStats, height: e.target.value})} className="w-full bg-transparent text-2xl font-black text-white outline-none" />
-                    <span className="text-zinc-500 font-bold">cm</span>
+                    <input type="number" value={healthStats.height} onChange={e => setHealthStats({ ...healthStats, height: e.target.value })} className="w-full bg-transparent text-xl font-black text-white outline-none" />
+                    <span className="text-white/30 text-sm font-bold">cm</span>
                   </div>
                 </div>
               </div>
@@ -79,45 +84,44 @@ export default function Settings({
 
         </div>
 
-        <div className="flex flex-col gap-6 w-full">
-          {/* FORGE PROTOCOL / AI PLANNING */}
-          <div className="bg-zinc-900 rounded-3xl p-6 md:p-8 border border-zinc-800 shadow-xl w-full">
-            <h3 className="font-bold text-xl text-zinc-100 mb-2 flex items-center gap-2">
-              <Dumbbell className="w-5 h-5 text-fuchsia-500"/> Forge Protocol
-            </h3>
-            <p className="text-zinc-400 mb-6 text-sm leading-relaxed">Configureer je macro cyclus. De AI kan deze wekelijks automatisch voor je inplannen rondom je andere afspraken.</p>
+        {/* Right column */}
+        <div className="flex flex-col gap-4">
 
-            <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="w-full sm:w-1/3">
-                  <label className="block text-xs font-bold text-zinc-500 uppercase mb-1">Dagen / Week</label>
-                  <input type="number" min="1" max="7" value={trainingDaysPerWeek} onChange={(e) => setTrainingDaysPerWeek(parseInt(e.target.value) || 1)} className="w-full bg-zinc-950 border border-zinc-800/80 rounded-xl px-4 py-3 text-zinc-100 outline-none focus:border-fuchsia-500 text-sm transition-colors" />
+          {/* Forge protocol */}
+          <div className={card}>
+            <h3 className={sectionTitle}><Dumbbell className="w-4 h-4 text-fuchsia-400" /> Forge Protocol</h3>
+            <p className={sectionSub}>Configureer je trainingsschema. De AI plant dit automatisch in.</p>
+            <div className="space-y-3">
+              <div className="flex gap-3">
+                <div className="w-1/3">
+                  <label className={fieldLabel}>Dagen/week</label>
+                  <input type="number" min="1" max="7" value={trainingDaysPerWeek} onChange={e => setTrainingDaysPerWeek(parseInt(e.target.value) || 1)} className={input} />
                 </div>
-                <div className="w-full sm:w-2/3">
-                  <label className="block text-xs font-bold text-zinc-500 uppercase mb-1">Macro Cyclus (Split met '/')</label>
-                  <input type="text" value={workoutSplit} onChange={(e) => setWorkoutSplit(e.target.value)} placeholder="Push / Pull / Legs" className="w-full bg-zinc-950 border border-zinc-800/80 rounded-xl px-4 py-3 text-zinc-100 outline-none focus:border-fuchsia-500 text-sm transition-colors" />
+                <div className="flex-1">
+                  <label className={fieldLabel}>Split</label>
+                  <input type="text" value={workoutSplit} onChange={e => setWorkoutSplit(e.target.value)} placeholder="Push / Pull / Legs" className={input} />
                 </div>
               </div>
 
-              <div className="flex items-center justify-between bg-zinc-950/50 border border-zinc-800 p-4 rounded-xl mt-4">
+              <div className="flex items-center justify-between bg-white/[0.03] border border-white/[0.06] p-3.5 rounded-lg">
                 <div>
-                  <h4 className="font-bold text-zinc-200">Automatisch Inplannen</h4>
-                  <p className="text-xs text-zinc-500 mt-1">AI plant wekelijks geruisloos je missende sessies in.</p>
+                  <p className="text-sm font-semibold text-white">Auto-inplannen</p>
+                  <p className="text-xs text-white/35 mt-0.5">AI plant wekelijks je sessies in.</p>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" checked={autoScheduleTrainings} onChange={(e) => { setAutoScheduleTrainings(e.target.checked); if (e.target.checked) hasAutoPlannedRef.current = false; }} className="sr-only peer" />
-                  <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-fuchsia-500"></div>
-                </label>
+                <Toggle
+                  checked={autoScheduleTrainings}
+                  onChange={e => { setAutoScheduleTrainings(e.target.checked); if (e.target.checked) hasAutoPlannedRef.current = false; }}
+                />
               </div>
 
-              <div className="flex items-center justify-between bg-zinc-950/50 border border-zinc-800 p-4 rounded-xl mt-4">
+              <div className="flex items-center justify-between bg-white/[0.03] border border-white/[0.06] p-3.5 rounded-lg">
                 <div>
-                  <h4 className="font-bold text-zinc-200">Forceer Herplanning</h4>
-                  <p className="text-xs text-zinc-500 mt-1">Verwijdert AI-sessies en plant opnieuw in op basis van huidige agenda.</p>
+                  <p className="text-sm font-semibold text-white">Forceer herplanning</p>
+                  <p className="text-xs text-white/35 mt-0.5">Verwijdert en herplant AI-sessies.</p>
                 </div>
                 <button
                   onClick={() => { lastPlannedWeekRef.current = null; lastAgendaLengthRef.current = -1; handleAIAutoPlan(false); }}
-                  className="flex items-center gap-2 bg-fuchsia-600 hover:bg-fuchsia-500 text-white text-xs font-bold px-4 py-2 rounded-xl transition-colors"
+                  className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-fuchsia-500/10 text-fuchsia-400 border border-fuchsia-500/20 hover:bg-fuchsia-500/20 transition-all duration-150"
                 >
                   <RefreshCw className="w-3 h-3" /> Herplan
                 </button>
@@ -125,54 +129,70 @@ export default function Settings({
             </div>
           </div>
 
-          {/* AGENDA INTEGRATIES */}
-          <div className="bg-zinc-900 rounded-3xl p-6 md:p-8 border border-zinc-800 shadow-xl w-full">
-            <h3 className="font-bold text-xl text-zinc-100 mb-2">Agenda Integraties</h3>
-            <p className="text-zinc-400 mb-8 text-sm leading-relaxed">Verbind je agenda veilig via OAuth of importeer een kalender feed (.ics) om alles centraal in Apex OS te tonen.</p>
-            <div className="space-y-4">
+          {/* Agenda integrations */}
+          <div className={card}>
+            <h3 className={sectionTitle}><LinkIcon className="w-4 h-4 text-[#00D4FF]" /> Agenda Integraties</h3>
+            <p className={sectionSub}>Verbind je agenda via OAuth of .ics URL.</p>
+            <div className="space-y-3">
               {['Google', 'Apple', 'Outlook', 'Andere Agenda'].map(provider => (
-                <div key={provider} className="flex flex-col p-5 rounded-2xl border bg-zinc-950/50 border-zinc-800 gap-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className={`w-4 h-4 rounded-full ${getEventColor(provider).split(' ')[0]} ${getEventColor(provider).split(' ')[1]}`}></div>
+                <div key={provider} className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-2 h-2 rounded-full ${getEventColor(provider).split(' ')[0]}`} />
                       <div>
-                        <h4 className="font-bold text-zinc-200">{provider === 'Andere Agenda' ? 'School / URL Agenda' : `${provider} Calendar`}</h4>
-                        <p className="text-xs text-zinc-500 mt-1">Status: {connectedAgendas[provider] ? <span className="text-emerald-400 font-bold">Verbonden</span> : 'Niet verbonden'}</p>
+                        <p className="text-sm font-semibold text-white">
+                          {provider === 'Andere Agenda' ? 'School / URL Agenda' : `${provider} Calendar`}
+                        </p>
+                        <p className="text-[10px] text-white/30 mt-0.5">
+                          {connectedAgendas[provider]
+                            ? <span className="text-emerald-400 font-bold">Verbonden</span>
+                            : 'Niet verbonden'}
+                        </p>
                       </div>
                     </div>
                   </div>
+
                   {!connectedAgendas[provider] ? (
-                    <div className="mt-2">
-                      {provider === 'Andere Agenda' || provider === 'Apple' ? (
-                        <div className="flex flex-col sm:flex-row gap-2">
-                          <div className="flex-1 relative">
-                            <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-                            <input type="url" placeholder={provider === 'Apple' ? "Plak hier je openbare iCloud link (webcal://... of https://...)" : "Plak hier de .ics link..."} value={agendaUrls[provider] || ''} onChange={(e) => setAgendaUrls(prev => ({...prev, [provider]: e.target.value}))} className="w-full bg-zinc-900 border border-zinc-700 rounded-xl pl-9 pr-4 py-3 text-sm text-zinc-200 outline-none focus:border-cyan-500 transition-colors" />
-                          </div>
-                          <button onClick={() => handleConnectUrlAgenda(provider)} disabled={isConnecting === provider || !(agendaUrls[provider] || '').trim()} className="px-6 py-3 rounded-xl text-sm font-bold bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 border border-cyan-500/30 disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center transition-all">
-                            {isConnecting === provider ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Inladen'}
-                          </button>
+                    provider === 'Andere Agenda' || provider === 'Apple' ? (
+                      <div className="flex gap-2">
+                        <div className="flex-1 relative">
+                          <LinkIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/25" />
+                          <input
+                            type="url"
+                            placeholder={provider === 'Apple' ? 'webcal:// of https://...' : '.ics link...'}
+                            value={agendaUrls[provider] || ''}
+                            onChange={e => setAgendaUrls(prev => ({ ...prev, [provider]: e.target.value }))}
+                            className={input + ' pl-8'}
+                          />
                         </div>
-                      ) : (
-                        <div>
-                          <button onClick={() => handleConnectApiAgenda(provider)} disabled={isConnecting === provider} className="w-full sm:w-auto px-6 py-3 rounded-xl text-sm font-bold bg-zinc-800 text-zinc-200 hover:bg-zinc-700 border border-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-3 transition-all">
-                            {isConnecting === provider ? (<><Loader2 className="w-4 h-4 animate-spin" /> Verbinding maken...</>) : (<><LinkIcon className="w-4 h-4" /> Log in met {provider}</>)}
-                          </button>
-                          <p className="text-[10px] text-zinc-600 mt-2 font-medium">Je wordt omgeleid naar {provider} om deze app veilige toegang (Read-Only) te geven tot je agenda.</p>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mt-2 bg-zinc-900/50 p-4 rounded-xl border border-zinc-800/50">
-                      <div>
-                        <p className="text-sm text-zinc-300 font-bold flex items-center gap-2">
-                          <CheckCircle2 className="w-4 h-4 text-emerald-400" /> {provider === 'Andere Agenda' || provider === 'Apple' ? 'Live .ics Feed Actief' : 'API Token Actief'}
-                        </p>
-                        <p className="text-xs text-zinc-500 mt-1">
-                          {provider === 'Andere Agenda' || provider === 'Apple' ? <span className="truncate block max-w-xs">{agendaUrls[provider]}</span> : 'Automatische synchronisatie staat aan.'}
-                        </p>
+                        <button
+                          onClick={() => handleConnectUrlAgenda(provider)}
+                          disabled={isConnecting === provider || !(agendaUrls[provider] || '').trim()}
+                          className="px-4 py-2 rounded-lg text-xs font-bold bg-[#00D4FF]/10 text-[#00D4FF] border border-[#00D4FF]/20 hover:bg-[#00D4FF]/20 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-all duration-150"
+                        >
+                          {isConnecting === provider ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Laden'}
+                        </button>
                       </div>
-                      <button onClick={() => handleDisconnectAgenda(provider)} className="px-4 py-2 rounded-lg text-xs font-bold bg-zinc-800 text-rose-400 hover:bg-zinc-700 border border-zinc-700 transition-all shrink-0">
+                    ) : (
+                      <button
+                        onClick={() => handleConnectApiAgenda(provider)}
+                        disabled={isConnecting === provider}
+                        className="flex items-center gap-2 text-xs font-semibold px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.08] text-white/60 hover:text-white hover:border-white/20 disabled:opacity-40 transition-all duration-150"
+                      >
+                        {isConnecting === provider ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <LinkIcon className="w-3.5 h-3.5" />}
+                        Log in met {provider}
+                      </button>
+                    )
+                  ) : (
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-xs text-emerald-400 flex items-center gap-1.5">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        {provider === 'Andere Agenda' || provider === 'Apple' ? 'Live feed actief' : 'API token actief'}
+                      </p>
+                      <button
+                        onClick={() => handleDisconnectAgenda(provider)}
+                        className="text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500/20 transition-all duration-150"
+                      >
                         Ontkoppelen
                       </button>
                     </div>
@@ -182,11 +202,8 @@ export default function Settings({
             </div>
           </div>
 
-
         </div>
-
       </div>
-
     </div>
   );
 }

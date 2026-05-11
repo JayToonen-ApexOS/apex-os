@@ -27,25 +27,22 @@ function buildBriefing({ todaysEvents, weather, currentSession, isYasminMode }) 
   const parts = [];
 
   if (realEvents.length === 0) {
-    parts.push(`Je agenda is leeg vandaag, ${name} — gebruik de tijd goed.`);
+    parts.push(`Je agenda is leeg vandaag, ${name}.`);
   } else {
-    const first = realEvents.sort((a, b) => (a.time || '').localeCompare(b.time || ''))[0];
+    const first = [...realEvents].sort((a, b) => (a.time || '').localeCompare(b.time || ''))[0];
     parts.push(
-      `Je hebt ${realEvents.length} afspraak${realEvents.length !== 1 ? 'en' : ''} vandaag.` +
+      `${realEvents.length} afspraak${realEvents.length !== 1 ? 'en' : ''} vandaag.` +
       (first.time ? ` Eerste om ${first.time}: ${first.title}.` : ` Eerste: ${first.title}.`)
     );
   }
-
-  if (currentSession) {
-    parts.push(`Forge: ${currentSession} staat op het schema.`);
-  }
-
-  if (weather.temp !== '--') {
-    parts.push(`Buiten: ${weather.temp}° en ${weather.condition.toLowerCase()} in ${weather.location}.`);
-  }
-
+  if (currentSession) parts.push(`Forge: ${currentSession}.`);
+  if (weather.temp !== '--') parts.push(`${weather.temp}°, ${weather.condition.toLowerCase()} in ${weather.location}.`);
   return parts.join(' ');
 }
+
+// Design tokens
+const card = 'rounded-xl border border-white/[0.06] bg-[#0a0a0a]';
+const muted = 'text-white/40';
 
 export default function Hub({
   isYasminMode, todaysEvents, currentSession, weather, habits,
@@ -53,132 +50,132 @@ export default function Hub({
   getEventColor, currentTime, currentDateFormatted, pendingTasks = [],
 }) {
   const cy = isYasminMode;
-  const accent      = cy ? 'text-purple-400'       : 'text-cyan-400';
-  const accentBg    = cy ? 'bg-purple-500/15'       : 'bg-cyan-500/10';
-  const accentBorder = cy ? 'border-purple-500/30'  : 'border-cyan-500/20';
-  const card        = `rounded-2xl border ${cy ? 'bg-[#2d1b4e]/40 border-purple-500/20' : 'bg-zinc-900 border-zinc-800'}`;
+  const accent = cy ? 'text-purple-400' : 'text-[#00D4FF]';
+  const accentBg = cy ? 'bg-purple-500/10' : 'bg-[#00D4FF]/10';
 
-  // Real agenda events (no habits)
   const realEvents = todaysEvents
     .filter(e => e.type !== 'Habit')
     .sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'));
 
-  const upcomingReal   = realEvents.filter(e => !e.completed);
-  const completedReal  = realEvents.filter(e => e.completed);
-  const displayEvents  = [...upcomingReal, ...completedReal].slice(0, 5);
-  const extraCount     = realEvents.length - 5;
+  const upcoming = realEvents.filter(e => !e.completed);
+  const completed = realEvents.filter(e => e.completed);
+  const displayEvents = [...upcoming, ...completed].slice(0, 5);
+  const extraCount = realEvents.length - 5;
 
-  // Daily focus: first upcoming real event, else first pending project task
-  const focusEvent = upcomingReal[0] || null;
-  const focusTask  = !focusEvent && pendingTasks.length > 0 ? pendingTasks[0] : null;
+  const focusEvent = upcoming[0] || null;
+  const focusTask = !focusEvent && pendingTasks.length > 0 ? pendingTasks[0] : null;
 
   const doneHabits = habits.filter(h => h.completedToday).length;
   const briefing = buildBriefing({ todaysEvents, weather, currentSession, isYasminMode });
 
   return (
-    <div className="space-y-4 animate-in fade-in duration-300 pb-6">
+    <div className="space-y-5 animate-in fade-in duration-200 pb-6">
 
-      {/* ── 1. HEADER ROW ── */}
-      <div className="flex items-start justify-between gap-3 pt-1">
-        <div>
-          <p className={`text-xs font-semibold uppercase tracking-widest mb-0.5 ${cy ? 'text-purple-400/50' : 'text-zinc-500'}`}>
-            {currentDateFormatted}
-          </p>
-          <h1 className="text-2xl font-black text-white leading-tight">
-            {getGreeting(currentTime)}, {cy ? 'Yasmin' : 'Jay'}
-          </h1>
-        </div>
+      {/* ── HERO ── */}
+      <div
+        className="rounded-xl p-6 border border-white/[0.06] relative overflow-hidden"
+        style={{
+          background: cy
+            ? 'radial-gradient(ellipse at 70% 0%, rgba(139,92,246,0.12) 0%, #0a0a0a 70%)'
+            : 'radial-gradient(ellipse at 70% 0%, rgba(0,212,255,0.08) 0%, #0a0a0a 70%)',
+        }}
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className={`text-xs font-semibold uppercase tracking-[0.12em] mb-1 ${muted}`}>
+              {currentDateFormatted}
+            </p>
+            <h1 className="text-3xl font-black text-white leading-tight tracking-tight">
+              {getGreeting(currentTime)}, {cy ? 'Yasmin' : 'Jay'}
+            </h1>
+          </div>
 
-        {/* Weather pill */}
-        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border shrink-0 mt-1 ${cy ? 'bg-purple-500/10 border-purple-500/20' : 'bg-zinc-800 border-zinc-700'}`}>
-          <WeatherIcon condition={weather.condition} className={`w-3.5 h-3.5 ${accent}`} />
-          <span className="text-sm font-bold text-white">{weather.temp}°</span>
-          <span className={`text-xs font-medium ${cy ? 'text-purple-300/70' : 'text-zinc-400'}`}>{weather.condition}</span>
+          <div className="flex flex-col items-end gap-2 shrink-0">
+            {/* Live clock */}
+            <span className={`text-2xl font-black tabular-nums leading-none tracking-tight ${accent}`}>
+              {currentTime}
+            </span>
+            {/* Weather pill */}
+            <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-white/[0.06] bg-white/[0.03]`}>
+              <WeatherIcon condition={weather.condition} className={`w-3.5 h-3.5 ${accent}`} />
+              <span className="text-sm font-bold text-white">{weather.temp}°</span>
+              <span className={`text-xs ${muted}`}>{weather.condition}</span>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* ── 2. AI BRIEFING CARD ── */}
-      <div className={`rounded-2xl border-l-4 p-4 ${cy
-        ? 'bg-[#2d1b4e]/50 border-l-purple-500 border border-purple-500/20'
-        : 'bg-zinc-900 border-l-cyan-500 border border-zinc-800'}`}>
+      {/* ── AI BRIEFING ── */}
+      <div className={`rounded-xl border-l-[3px] border border-white/[0.06] p-4 ${cy ? 'bg-[#0a0a0a] border-l-purple-500' : 'bg-[#0a0a0a] border-l-[#00D4FF]'}`}>
         <div className="flex items-center gap-2 mb-2">
-          {cy ? <Sparkles className="w-4 h-4 text-purple-400" /> : <BrainCircuit className="w-4 h-4 text-cyan-400" />}
-          <span className={`text-xs font-black uppercase tracking-widest ${accent}`}>
-            {cy ? 'Yasmin Briefing' : 'Apex Briefing'}
+          {cy ? <Sparkles className={`w-3.5 h-3.5 ${accent}`} /> : <BrainCircuit className={`w-3.5 h-3.5 ${accent}`} />}
+          <span className={`text-[10px] font-black uppercase tracking-[0.12em] ${accent}`}>
+            Apex Briefing
           </span>
         </div>
-        <p className={`text-sm leading-relaxed line-clamp-3 ${cy ? 'text-purple-100/80' : 'text-zinc-300'}`}>
-          {briefing}
-        </p>
+        <p className="text-sm text-white/60 leading-relaxed line-clamp-2">{briefing}</p>
       </div>
 
-      {/* ── 3. TODAY'S AGENDA ── */}
-      <div className={card + ' p-4'}>
-        <div className="flex items-center justify-between mb-3">
+      {/* ── TODAY'S AGENDA ── */}
+      <div className={card + ' p-5'}>
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <CalendarDays className="w-4 h-4 text-emerald-400" />
             <span className="font-bold text-white text-sm">Vandaag</span>
             {realEvents.length > 0 && (
-              <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${cy ? 'bg-purple-500/20 text-purple-300' : 'bg-zinc-800 text-zinc-400'}`}>
+              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${accentBg} ${accent}`}>
                 {realEvents.length}
               </span>
             )}
           </div>
           <button
             onClick={() => setActiveTab('agenda')}
-            className={`flex items-center gap-0.5 text-xs font-semibold ${accent} hover:opacity-75 transition-opacity`}
+            className={`flex items-center gap-0.5 text-xs font-semibold ${accent} hover:opacity-70 transition-opacity duration-150`}
           >
-            Volledige agenda <ChevronRight className="w-3.5 h-3.5" />
+            Alles zien <ChevronRight className="w-3.5 h-3.5" />
           </button>
         </div>
 
         {displayEvents.length === 0 ? (
-          <p className={`text-sm italic py-2 ${cy ? 'text-purple-300/40' : 'text-zinc-600'}`}>
-            Geen afspraken vandaag.
+          <p className={`text-sm italic ${muted} py-1`}>
+            Geen afspraken vandaag — geniet van de vrijheid.
           </p>
         ) : (
-          <div className="space-y-1.5">
-            {displayEvents.map(event => (
-              <div
-                key={event.id}
-                className={`flex items-center gap-3 group rounded-xl px-2 py-1.5 -mx-2 transition-colors cursor-pointer
-                  ${event.completed ? 'opacity-45' : (cy ? 'hover:bg-purple-500/8' : 'hover:bg-zinc-800/60')}`}
-                onClick={() => setSelectedEvent(event)}
-              >
-                {/* Time */}
-                <span className={`text-xs font-bold w-9 shrink-0 text-right tabular-nums ${cy ? 'text-purple-300/50' : 'text-zinc-500'}`}>
-                  {event.time || '·'}
-                </span>
-
-                {/* Source dot */}
-                <div className={`w-2 h-2 rounded-full shrink-0 ${getEventColor(event.type)}`} />
-
-                {/* Title */}
-                <span className={`flex-1 text-sm font-medium truncate ${event.completed ? 'line-through text-zinc-500' : 'text-zinc-100'}`}>
-                  {event.title}
-                </span>
-
-                {/* Location hint */}
-                {event.location && !event.completed && (
-                  <MapPin className="w-3 h-3 text-zinc-600 shrink-0" />
+          <div className="space-y-px">
+            {displayEvents.map((event, idx) => (
+              <div key={event.id} className="relative">
+                {/* Vertical connector line between events */}
+                {idx < displayEvents.length - 1 && (
+                  <div className="absolute left-[27px] top-[34px] w-px h-[calc(100%-2px)] bg-white/[0.06]" />
                 )}
-
-                {/* Complete toggle */}
-                <button
-                  onClick={(e) => { e.stopPropagation(); toggleAgendaEventCompleted(event.id, e); }}
-                  className={`shrink-0 transition-colors ${event.completed ? 'text-emerald-400' : 'text-zinc-700 hover:text-emerald-400'}`}
+                <div
+                  className={`flex items-center gap-3 py-2 px-2 -mx-2 rounded-lg cursor-pointer transition-all duration-150 group
+                    ${event.completed ? 'opacity-40' : 'hover:bg-white/[0.03]'}`}
+                  onClick={() => setSelectedEvent(event)}
                 >
-                  {event.completed
-                    ? <CheckCircle2 className="w-[17px] h-[17px]" />
-                    : <Circle className="w-[17px] h-[17px]" />}
-                </button>
+                  <span className={`text-xs font-bold w-10 shrink-0 text-right tabular-nums ${muted}`}>
+                    {event.time || '—'}
+                  </span>
+                  <div className={`w-2 h-2 rounded-full shrink-0 ${getEventColor(event.type)}`} />
+                  <span className={`flex-1 text-sm font-medium ${event.completed ? 'line-through text-white/30' : 'text-white'}`}>
+                    {event.title}
+                  </span>
+                  {event.location && !event.completed && (
+                    <MapPin className={`w-3 h-3 ${muted} shrink-0`} />
+                  )}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); toggleAgendaEventCompleted(event.id, e); }}
+                    className={`shrink-0 transition-colors duration-150 ${event.completed ? 'text-emerald-400' : 'text-white/20 hover:text-emerald-400 opacity-0 group-hover:opacity-100'}`}
+                  >
+                    {event.completed ? <CheckCircle2 className="w-4 h-4" /> : <Circle className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
             ))}
-
             {extraCount > 0 && (
               <button
                 onClick={() => setActiveTab('agenda')}
-                className={`w-full text-center text-xs font-semibold pt-1.5 ${accent} hover:opacity-75 transition-opacity`}
+                className={`w-full text-center text-xs font-semibold pt-3 ${accent} hover:opacity-70 transition-opacity duration-150`}
               >
                 + {extraCount} meer afspraken →
               </button>
@@ -187,32 +184,28 @@ export default function Hub({
         )}
       </div>
 
-      {/* ── 4. FOCUS + HABITS ROW ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {/* ── FOCUS + HABITS ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
         {/* Daily Focus */}
-        <div className={`rounded-2xl p-4 border ${cy
-          ? 'bg-gradient-to-br from-purple-900/40 to-[#1a0b2e]/60 border-purple-500/25'
-          : 'bg-gradient-to-br from-zinc-900 to-zinc-950 border-zinc-800'}`}>
-          <div className="flex items-center gap-1.5 mb-3">
+        <div className={card + ' p-5'}>
+          <div className="flex items-center gap-1.5 mb-4">
             <Target className={`w-3.5 h-3.5 ${accent}`} />
-            <span className={`text-[10px] font-black uppercase tracking-widest ${accent}`}>Focus vandaag</span>
+            <span className={`text-[10px] font-black uppercase tracking-[0.12em] ${accent}`}>Focus</span>
           </div>
 
           {focusEvent ? (
-            <div className="flex flex-col gap-1">
-              <p className="text-white font-bold text-base leading-snug">{focusEvent.title}</p>
-              <p className={`text-xs ${cy ? 'text-purple-300/60' : 'text-zinc-500'}`}>
-                {focusEvent.time
-                  ? `Om ${focusEvent.time} · eerste afspraak van de dag`
-                  : 'Eerste afspraak van de dag'}
+            <div>
+              <p className="text-white font-bold text-xl leading-tight mb-1">{focusEvent.title}</p>
+              <p className={`text-xs ${muted} mb-4`}>
+                {focusEvent.time ? `Om ${focusEvent.time} · eerste afspraak` : 'Eerste afspraak van de dag'}
               </p>
               <button
                 onClick={(e) => { e.stopPropagation(); toggleAgendaEventCompleted(focusEvent.id, e); }}
-                className={`mt-2 self-start flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg transition-all active:scale-95
+                className={`flex items-center gap-2 text-xs font-semibold px-3 py-2 rounded-lg border transition-all duration-150 active:scale-95
                   ${focusEvent.completed
-                    ? 'bg-emerald-500/15 text-emerald-400'
-                    : `${accentBg} ${accent} ${accentBorder} border`}`}
+                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                    : `${accentBg} ${accent} border-white/[0.06] hover:border-white/20`}`}
               >
                 {focusEvent.completed
                   ? <><CheckCircle2 className="w-3.5 h-3.5" /> Gedaan</>
@@ -220,37 +213,35 @@ export default function Hub({
               </button>
             </div>
           ) : focusTask ? (
-            <div className="flex flex-col gap-1">
-              <p className="text-white font-bold text-base leading-snug">{focusTask.title}</p>
-              <p className={`text-xs ${cy ? 'text-purple-300/60' : 'text-zinc-500'}`}>{focusTask.projectName}</p>
+            <div>
+              <p className="text-white font-bold text-xl leading-tight mb-1">{focusTask.title}</p>
+              <p className={`text-xs ${muted} mb-4`}>{focusTask.projectName}</p>
               <button
                 onClick={() => setActiveTab('projects')}
-                className={`mt-2 self-start flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border transition-all active:scale-95 ${accentBg} ${accent} ${accentBorder}`}
+                className={`flex items-center gap-2 text-xs font-semibold px-3 py-2 rounded-lg border ${accentBg} ${accent} border-white/[0.06] hover:border-white/20 transition-all duration-150 active:scale-95`}
               >
                 Open project <ArrowRight className="w-3 h-3" />
               </button>
             </div>
           ) : (
-            <p className={`text-sm ${cy ? 'text-purple-300/50' : 'text-zinc-600'} italic`}>
-              Niets gepland — goede dag voor deep work.
+            <p className={`text-sm ${muted} italic`}>
+              Geen prioriteit — goede dag voor deep work.
             </p>
           )}
         </div>
 
         {/* Habits */}
-        <div className={card + ' p-4 flex flex-col'}>
-          <div className="flex items-center justify-between mb-3">
+        <div className={card + ' p-5'}>
+          <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-1.5">
-              <Flame className="w-4 h-4 text-orange-400" />
-              <span className="text-sm font-bold text-white">Habits</span>
+              <Flame className="w-3.5 h-3.5 text-orange-400" />
+              <span className="text-[10px] font-black uppercase tracking-[0.12em] text-white/60">Habits</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className={`text-xs font-bold ${cy ? 'text-purple-300/60' : 'text-zinc-500'}`}>
-                {doneHabits}/{habits.length}
-              </span>
+              <span className={`text-xs font-bold ${muted}`}>{doneHabits}/{habits.length}</span>
               <button
                 onClick={() => setActiveTab('habits')}
-                className={`text-xs font-semibold ${accent} hover:opacity-75 transition-opacity`}
+                className={`text-xs font-semibold ${accent} hover:opacity-70 transition-opacity duration-150`}
               >
                 Toon alle →
               </button>
@@ -258,30 +249,28 @@ export default function Hub({
           </div>
 
           {habits.length === 0 ? (
-            <p className={`text-xs italic ${cy ? 'text-purple-300/40' : 'text-zinc-600'}`}>Geen habits ingesteld.</p>
+            <p className={`text-xs italic ${muted}`}>Geen habits ingesteld.</p>
           ) : (
             <div className="space-y-2">
               {habits.map(habit => (
                 <button
                   key={habit.id}
                   onClick={(e) => toggleHabit(habit.id, e)}
-                  className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl border text-left transition-all active:scale-[0.98]
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border text-left transition-all duration-150 active:scale-[0.99]
                     ${habit.completedToday
-                      ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-300'
-                      : (cy
-                        ? 'bg-purple-900/20 border-purple-500/10 text-purple-200/70 hover:border-purple-400/30'
-                        : 'bg-zinc-800/50 border-zinc-700/50 text-zinc-300 hover:border-zinc-600')}`}
+                      ? 'bg-emerald-500/8 border-emerald-500/20 text-emerald-300'
+                      : 'bg-white/[0.02] border-white/[0.06] text-white/60 hover:bg-white/[0.04] hover:text-white/80'}`}
                 >
-                  <div className="flex items-center gap-2 min-w-0">
-                    {habit.completedToday
-                      ? <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
-                      : <Circle className="w-4 h-4 shrink-0 text-zinc-600" />}
-                    <span className="text-xs font-semibold truncate">{habit.title}</span>
-                  </div>
-                  {habit.streak > 0 && (
-                    <div className={`flex items-center gap-1 shrink-0 px-1.5 py-0.5 rounded-md ${habit.completedToday ? 'bg-orange-500/15' : (cy ? 'bg-[#1a0b2e]' : 'bg-zinc-900')}`}>
-                      <Flame className={`w-3 h-3 ${habit.completedToday ? 'text-orange-400' : 'text-zinc-600'}`} />
-                      <span className={`text-[10px] font-black tabular-nums ${habit.completedToday ? 'text-orange-400' : 'text-zinc-600'}`}>
+                  {habit.completedToday
+                    ? <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+                    : <Circle className="w-4 h-4 shrink-0 text-white/20" />}
+                  <span className={`flex-1 text-xs font-semibold truncate ${habit.completedToday ? 'line-through opacity-60' : ''}`}>
+                    {habit.title}
+                  </span>
+                  {habit.streak > 1 && (
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Flame className={`w-3 h-3 ${habit.completedToday ? 'text-orange-400' : 'text-white/20'}`} />
+                      <span className={`text-[10px] font-black tabular-nums ${habit.completedToday ? 'text-orange-400' : muted}`}>
                         {habit.streak}
                       </span>
                     </div>
@@ -291,7 +280,6 @@ export default function Hub({
             </div>
           )}
         </div>
-
       </div>
     </div>
   );

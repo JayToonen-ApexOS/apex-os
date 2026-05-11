@@ -1007,24 +1007,30 @@ export default function App() {
 
   // --- UI RENDERERS ---
 
-  const NavButton = ({ id, icon, label }) => (
-    <button 
-      onClick={() => { setActiveTab(id); setIsMobileMenuOpen(false); }}
-      className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl font-bold transition-all duration-300 ${
-        activeTab === id 
-          ? (isYasminMode ? 'bg-[#2d1b4e] text-purple-400 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]' : 'bg-zinc-800 text-cyan-400 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]')
-          : (isYasminMode ? 'text-purple-300/60 hover:text-purple-100 hover:bg-[#2d1b4e]/50' : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900')
-      }`}
-    >
-      {icon} {label}
-    </button>
-  );
+  const NavButton = ({ id, icon, label }) => {
+    const isActive = activeTab === id;
+    return (
+      <button
+        onClick={() => { setActiveTab(id); setIsMobileMenuOpen(false); }}
+        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${
+          isActive
+            ? isYasminMode ? 'bg-white/10 text-white' : 'bg-white/10 text-white'
+            : 'text-white/40 hover:text-white/80 hover:bg-white/[0.04]'
+        }`}
+      >
+        <span className={`shrink-0 ${isActive ? (isYasminMode ? 'text-purple-400' : 'text-[#00D4FF]') : ''}`}>
+          {icon}
+        </span>
+        {label}
+      </button>
+    );
+  };
 
   // Auth loading / login gate
   if (authLoading) {
     return (
-      <div className="flex h-screen bg-zinc-950 items-center justify-center">
-        <div className="w-6 h-6 border-2 border-cyan-500/30 border-t-cyan-400 rounded-full animate-spin" />
+      <div className="flex h-screen bg-black items-center justify-center">
+        <div className="w-5 h-5 border-2 border-white/10 border-t-[#00D4FF] rounded-full animate-spin" />
       </div>
     );
   }
@@ -1033,12 +1039,15 @@ export default function App() {
   }
 
   return (
-    <div className={`flex h-screen transition-colors duration-1000 ${isYasminMode ? 'bg-[#140824]' : 'bg-zinc-950'} text-zinc-100 font-sans overflow-hidden selection:bg-cyan-500/30`}>
+    <div className={`flex h-screen ${isYasminMode ? 'bg-[#0d0010]' : 'bg-black'} text-white font-sans overflow-hidden`} style={{ fontFamily: "'Inter', system-ui, -apple-system, sans-serif" }}>
       <style dangerouslySetInnerHTML={{__html: `
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        * { box-sizing: border-box; }
+        ::selection { background: rgba(0,212,255,0.2); }
+        .custom-scrollbar::-webkit-scrollbar { width: 2px; height: 2px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #3f3f46; border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: #52525b; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(255,255,255,0.15); border-radius: 99px; }
+        @media (max-width: 1024px) { .custom-scrollbar::-webkit-scrollbar { width: 0; } }
         @keyframes scan {
           0% { transform: translateY(-100%); opacity: 0; }
           10% { opacity: 1; }
@@ -1046,57 +1055,77 @@ export default function App() {
           100% { transform: translateY(400px); opacity: 0; }
         }
         .safe-top { padding-top: env(safe-area-inset-top); }
-        .pt-safe-main { padding-top: calc(4rem + env(safe-area-inset-top)); }
+        .pt-safe-main { padding-top: calc(56px + env(safe-area-inset-top)); }
         .pb-safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
+        input[type=date]::-webkit-calendar-picker-indicator { filter: invert(1) opacity(0.3); }
+        input[type=time]::-webkit-calendar-picker-indicator { filter: invert(1) opacity(0.3); }
       `}} />
 
-      {/* MOBILE MENU BAR */}
-      <div className={`lg:hidden fixed top-0 left-0 right-0 backdrop-blur-xl border-b z-40 flex flex-col transition-colors duration-1000 safe-top ${isYasminMode ? 'bg-[#140824]/90 border-purple-900/30' : 'bg-zinc-950/90 border-zinc-800'}`}>
-        <div className="h-16 flex items-center justify-between px-6">
-          <div className="flex items-center gap-2 font-black tracking-widest text-lg">
-            <Triangle className={`w-5 h-5 ${isYasminMode ? 'text-purple-400 fill-purple-400' : 'text-cyan-400 fill-cyan-400'}`} /> APEX
+      {/* MOBILE TOP BAR */}
+      <div className={`lg:hidden fixed top-0 left-0 right-0 z-40 border-b safe-top ${isYasminMode ? 'bg-[#0d0010]/95 border-white/[0.06]' : 'bg-black/95 border-white/[0.06]'}`} style={{ backdropFilter: 'blur(20px)' }}>
+        <div className="h-14 flex items-center justify-between px-5">
+          <div className="flex items-center gap-2">
+            <Triangle className={`w-4 h-4 fill-current ${isYasminMode ? 'text-purple-400' : 'text-[#00D4FF]'}`} />
+            <span className="font-black tracking-[0.15em] text-sm text-white">APEX</span>
           </div>
-          <button onClick={() => setIsMobileMenuOpen(true)} className={`p-2 rounded-xl border ${isYasminMode ? 'text-purple-300 bg-[#2d1b4e] border-purple-800' : 'text-zinc-300 bg-zinc-900 border-zinc-800'}`}>
+          <button onClick={() => setIsMobileMenuOpen(true)} className="p-2 rounded-lg text-white/50 hover:text-white hover:bg-white/[0.06] transition-all duration-150">
             <Menu className="w-5 h-5" />
           </button>
         </div>
       </div>
 
       {isMobileMenuOpen && (
-        <div className="fixed inset-0 bg-black/60 z-[60] lg:hidden backdrop-blur-sm transition-opacity" onClick={() => setIsMobileMenuOpen(false)} />
+        <div className="fixed inset-0 bg-black/70 z-[60] lg:hidden" style={{ backdropFilter: 'blur(4px)' }} onClick={() => setIsMobileMenuOpen(false)} />
       )}
 
-      {/* SIDEBAR NAVIGATION */}
-      <div className={`fixed inset-y-0 left-0 z-[70] w-72 border-r transform transition-all duration-300 ease-in-out lg:translate-x-0 lg:static flex flex-col ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} ${isYasminMode ? 'bg-[#140824] border-purple-900/30' : 'bg-zinc-950 border-zinc-800'}`}>
-        <div className="p-6 flex items-center justify-between lg:justify-start lg:mb-4 lg:mt-4">
-          <div className="flex items-center gap-3 font-black tracking-widest text-xl lg:text-3xl text-white">
-            <Triangle className={`${isYasminMode ? 'text-purple-400 fill-purple-400' : 'text-cyan-400 fill-cyan-400'} w-6 h-6 lg:w-8 lg:h-8`}/> APEX
+      {/* SIDEBAR */}
+      <div className={`fixed inset-y-0 left-0 z-[70] w-[200px] border-r flex flex-col transform transition-transform duration-300 ease-out lg:translate-x-0 lg:static ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} ${isYasminMode ? 'bg-[#0d0010] border-white/[0.06]' : 'bg-[#000] border-white/[0.06]'}`}>
+        {/* Logo */}
+        <div className="h-16 flex items-center justify-between px-5 shrink-0">
+          <div className="flex items-center gap-2.5">
+            <Triangle className={`w-4 h-4 fill-current ${isYasminMode ? 'text-purple-400' : 'text-[#00D4FF]'}`} />
+            <span className="font-black tracking-[0.15em] text-sm text-white">APEX</span>
           </div>
-          <button onClick={() => setIsMobileMenuOpen(false)} className="lg:hidden text-zinc-400 hover:text-white p-2">
-            <X className="w-6 h-6" />
+          <button onClick={() => setIsMobileMenuOpen(false)} className="lg:hidden p-1.5 rounded-md text-white/40 hover:text-white hover:bg-white/[0.06] transition-all duration-150">
+            <X className="w-4 h-4" />
           </button>
         </div>
-        <nav className="flex-1 px-4 space-y-2 overflow-y-auto pb-6 custom-scrollbar">
-          <NavButton id="hub" icon={<Command />} label="Morning Hub" />
-          <NavButton id="agenda" icon={<Calendar />} label="Agenda" />
-          <NavButton id="focus" icon={<Timer />} label="Focus Mode" />
-          <NavButton id="projects" icon={<FolderKanban />} label="Projects" />
-          <NavButton id="habits" icon={<CheckCircle2 />} label="Habit Tracker" />
-          <NavButton id="nutrition" icon={<PieChart />} label="Nutrition" />
-          <NavButton id="forge" icon={<Dumbbell />} label="The Forge" />
-          <NavButton id="logbook" icon={<BookMarked />} label="Logbook" />
-          <div className={`pt-4 mt-4 border-t ${isYasminMode ? 'border-purple-900/30' : 'border-zinc-800/50'}`}>
-             <NavButton id="achievements" icon={<Medal />} label="Achievements" />
-             <NavButton id="settings" icon={<SettingsIcon />} label="Settings" />
-          </div>
+
+        {/* Primary nav */}
+        <nav className="flex-1 px-3 pt-2 space-y-0.5 overflow-y-auto custom-scrollbar">
+          <NavButton id="hub"      icon={<Command className="w-4 h-4" />}      label="Hub" />
+          <NavButton id="agenda"   icon={<Calendar className="w-4 h-4" />}     label="Agenda" />
+          <NavButton id="focus"    icon={<Timer className="w-4 h-4" />}        label="Focus" />
+          <NavButton id="projects" icon={<FolderKanban className="w-4 h-4" />} label="Projects" />
+
+          {/* Divider */}
+          <div className="my-3 border-t border-white/[0.06]" />
+
+          <NavButton id="forge"     icon={<Dumbbell className="w-4 h-4" />}     label="Forge" />
+          <NavButton id="nutrition" icon={<PieChart className="w-4 h-4" />}     label="Nutrition" />
+          <NavButton id="habits"    icon={<CheckCircle2 className="w-4 h-4" />} label="Habits" />
+          <NavButton id="logbook"   icon={<BookMarked className="w-4 h-4" />}   label="Logbook" />
         </nav>
+
+        {/* Settings pinned at bottom */}
+        <div className="p-3 border-t border-white/[0.06] shrink-0">
+          <button
+            onClick={() => { setActiveTab('settings'); setIsMobileMenuOpen(false); }}
+            className={`w-full flex items-center justify-center p-2.5 rounded-lg transition-all duration-150 ${
+              activeTab === 'settings' ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white/80 hover:bg-white/[0.04]'
+            }`}
+          >
+            <SettingsIcon className={`w-4 h-4 ${activeTab === 'settings' ? (isYasminMode ? 'text-purple-400' : 'text-[#00D4FF]') : ''}`} />
+          </button>
+        </div>
       </div>
 
       {/* MAIN CONTENT AREA */}
-      <div className={`flex-1 flex flex-col h-full relative overflow-hidden pt-safe-main lg:pt-0 ${isYasminMode ? 'bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-[#2d1b4e] via-[#140824] to-[#140824]' : ''}`}>
-        
-        <main ref={scrollContainerRef} className="flex-1 overflow-y-auto p-4 sm:p-8 lg:p-10 scroll-smooth relative custom-scrollbar pb-56 lg:pb-32">
-          <div className="max-w-6xl mx-auto w-full flex flex-col min-h-full">
+      <div className={`flex-1 flex flex-col h-full relative overflow-hidden pt-safe-main lg:pt-0 ${isYasminMode ? 'bg-[#0d0010]' : 'bg-black'}`}>
+        <main ref={scrollContainerRef} className="flex-1 overflow-y-auto px-4 py-6 sm:px-8 sm:py-8 lg:px-10 lg:py-10 scroll-smooth relative custom-scrollbar pb-40 lg:pb-32">
+          <div className="max-w-5xl mx-auto w-full flex flex-col min-h-full">
             {activeTab === 'hub' && <Hub isYasminMode={isYasminMode} todaysEvents={todaysEvents} currentSession={currentSession} weather={weather} trainingEvents={trainingEvents} trainingDaysPerWeek={trainingDaysPerWeek} todayISO={todayISO} habits={habits} scratchpad={scratchpad} setScratchpad={setScratchpad} agendaEvents={agendaEvents} setActiveTab={setActiveTab} toggleHabit={toggleHabit} toggleAgendaEventCompleted={toggleAgendaEventCompleted} setSelectedEvent={setSelectedEvent} getEventColor={getEventColor} currentTime={currentTime} currentDateFormatted={currentDateFormatted} pendingTasks={pendingTasks} />}
             {activeTab === 'agenda' && <Agenda todayISO={todayISO} agendaEvents={agendaEvents} connectedAgendas={connectedAgendas} newEventTitle={newEventTitle} setNewEventTitle={setNewEventTitle} newEventDate={newEventDate} setNewEventDate={setNewEventDate} newEventTime={newEventTime} setNewEventTime={setNewEventTime} newEventSource={newEventSource} setNewEventSource={setNewEventSource} newEventLocation={newEventLocation} setNewEventLocation={setNewEventLocation} newEventDescription={newEventDescription} setNewEventDescription={setNewEventDescription} currentMonth={currentMonth} currentYear={currentYear} daysInMonth={daysInMonth} startOffset={startOffset} monthNames={monthNames} handleAddAgendaEvent={handleAddAgendaEvent} handlePrevMonth={handlePrevMonth} handleNextMonth={handleNextMonth} setSelectedEvent={setSelectedEvent} getEventColor={getEventColor} />}
             {activeTab === 'focus' && <Focus timeLeft={timeLeft} isTimerRunning={isTimerRunning} pendingTasks={pendingTasks} toggleTimer={toggleTimer} resetTimer={resetTimer} formatTime={formatTime} toggleProjectTask={toggleProjectTask} />}
@@ -1166,26 +1195,26 @@ export default function App() {
         </main>
 
         {/* COMMAND BAR */}
-        <div className="absolute bottom-24 lg:bottom-6 left-0 right-0 z-50 px-4 md:px-8 pointer-events-none flex justify-center">
-          <form onSubmit={handleAISubmit} className="w-full max-w-2xl pointer-events-auto relative">
+        <div className="absolute bottom-20 lg:bottom-5 left-0 right-0 z-50 px-4 lg:px-8 pointer-events-none flex justify-center">
+          <form onSubmit={handleAISubmit} className="w-full max-w-xl pointer-events-auto relative">
             {lastAction && (
-              <div className="absolute bottom-[calc(100%+12px)] left-1/2 -translate-x-1/2 text-sm font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 backdrop-blur-xl px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 animate-in slide-in-from-bottom-2 shadow-2xl z-[60] whitespace-nowrap">
-                <CheckCircle2 className="w-4 h-4" /> {lastAction}
+              <div className="absolute bottom-[calc(100%+10px)] left-1/2 -translate-x-1/2 text-xs font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 rounded-lg flex items-center gap-2 animate-in slide-in-from-bottom-2 whitespace-nowrap z-[60]" style={{ backdropFilter: 'blur(16px)' }}>
+                <CheckCircle2 className="w-3.5 h-3.5" /> {lastAction}
               </div>
             )}
-            <div className={`flex items-center backdrop-blur-2xl border rounded-2xl md:rounded-full px-4 py-3 md:px-6 md:py-4 shadow-2xl transition-all focus-within:shadow-[0_0_30px_rgba(6,182,212,0.15)] ${isYasminMode ? 'bg-[#2d1b4e]/90 border-purple-500/30 focus-within:border-purple-400/50 focus-within:bg-[#2d1b4e]' : 'bg-zinc-800/90 border-zinc-700/80 focus-within:border-cyan-500/50 focus-within:bg-zinc-800'}`}>
-              <Sparkles className={`w-5 h-5 mr-3 md:mr-4 shrink-0 ${isProcessing ? (isYasminMode ? 'text-purple-400' : 'text-cyan-400') + ' animate-pulse' : 'text-zinc-400'}`} />
-              <input 
-                ref={aiInputRef} 
-                type="text" 
-                value={aiInput} 
-                onChange={(e) => setAiInput(e.target.value)} 
-                placeholder="Vraag om AI advies of gebruik een commando..." 
-                className="flex-1 bg-transparent text-zinc-100 placeholder-zinc-500 outline-none text-base md:text-lg font-medium w-full" 
-                disabled={isProcessing} 
+            <div className={`flex items-center border rounded-xl px-4 py-3 transition-all duration-150 focus-within:border-white/20 ${isYasminMode ? 'bg-[#1a0b2e]/90 border-white/[0.08]' : 'bg-[#111]/90 border-white/[0.08]'}`} style={{ backdropFilter: 'blur(24px)' }}>
+              <Sparkles className={`w-4 h-4 mr-3 shrink-0 ${isProcessing ? (isYasminMode ? 'text-purple-400' : 'text-[#00D4FF]') + ' animate-pulse' : 'text-white/30'}`} />
+              <input
+                ref={aiInputRef}
+                type="text"
+                value={aiInput}
+                onChange={(e) => setAiInput(e.target.value)}
+                placeholder="Commando of AI-vraag..."
+                className="flex-1 bg-transparent text-white placeholder-white/25 outline-none text-sm font-medium"
+                disabled={isProcessing}
               />
-              <button type="submit" disabled={isProcessing || !aiInput.trim()} className={`ml-3 md:ml-4 text-zinc-950 disabled:text-zinc-500 rounded-xl md:rounded-full p-2 md:p-2.5 transition-all shrink-0 ${isYasminMode ? 'bg-purple-400 hover:bg-purple-300 disabled:bg-purple-900' : 'bg-cyan-500 hover:bg-cyan-400 disabled:bg-zinc-700'}`}>
-                {isProcessing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+              <button type="submit" disabled={isProcessing || !aiInput.trim()} className={`ml-3 shrink-0 p-1.5 rounded-lg transition-all duration-150 disabled:opacity-30 ${isYasminMode ? 'bg-purple-500 hover:bg-purple-400 text-white' : 'bg-[#00D4FF] hover:bg-[#00b8d9] text-black'}`}>
+                {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               </button>
             </div>
           </form>
@@ -1194,38 +1223,43 @@ export default function App() {
       </div>
 
       {/* MOBILE BOTTOM NAV */}
-      <div className={`lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t backdrop-blur-xl flex flex-col transition-colors duration-1000 pb-safe-bottom ${isYasminMode ? 'bg-[#140824]/95 border-purple-900/30' : 'bg-zinc-950/95 border-zinc-800'}`}>
-        <div className="flex items-center h-16">
+      <div className={`lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t pb-safe-bottom ${isYasminMode ? 'bg-[#0d0010]/95 border-white/[0.06]' : 'bg-black/95 border-white/[0.06]'}`} style={{ backdropFilter: 'blur(20px)' }}>
+        <div className="flex items-center h-14">
           {[
-            { id: 'hub',      icon: <Command className="w-5 h-5" />,      label: 'Hub'     },
-            { id: 'agenda',   icon: <Calendar className="w-5 h-5" />,     label: 'Agenda'  },
-            { id: 'focus',    icon: <Timer className="w-5 h-5" />,        label: 'Focus'   },
-            { id: 'projects', icon: <FolderKanban className="w-5 h-5" />, label: 'Projects'},
-          ].map(({ id, icon, label }) => (
-            <button
-              key={id}
-              onClick={() => { setActiveTab(id); setIsMoreMenuOpen(false); }}
-              className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 text-[10px] font-bold uppercase tracking-wider transition-colors ${
-                activeTab === id
-                  ? (isYasminMode ? 'text-purple-400' : 'text-cyan-400')
-                  : (isYasminMode ? 'text-purple-300/40 hover:text-purple-300/70' : 'text-zinc-600 hover:text-zinc-400')
-              }`}
-            >
-              {icon}
-              {label}
-            </button>
-          ))}
-          {/* More button */}
+            { id: 'hub',      icon: <Command className="w-[18px] h-[18px]" />,      label: 'Hub'      },
+            { id: 'agenda',   icon: <Calendar className="w-[18px] h-[18px]" />,     label: 'Agenda'   },
+            { id: 'focus',    icon: <Timer className="w-[18px] h-[18px]" />,        label: 'Focus'    },
+            { id: 'projects', icon: <FolderKanban className="w-[18px] h-[18px]" />, label: 'Projects' },
+          ].map(({ id, icon, label }) => {
+            const isActive = activeTab === id;
+            return (
+              <button
+                key={id}
+                onClick={() => { setActiveTab(id); setIsMoreMenuOpen(false); }}
+                className="flex-1 flex flex-col items-center justify-center gap-1 py-2 transition-all duration-150"
+              >
+                <span className={isActive ? (isYasminMode ? 'text-purple-400' : 'text-[#00D4FF]') : 'text-white/30'}>
+                  {icon}
+                </span>
+                <span className={`text-[9px] font-semibold tracking-wider ${isActive ? 'text-white/70' : 'text-white/20'}`}>{label}</span>
+                {isActive && <div className={`w-1 h-1 rounded-full ${isYasminMode ? 'bg-purple-400' : 'bg-[#00D4FF]'}`} />}
+              </button>
+            );
+          })}
           <button
             onClick={() => setIsMoreMenuOpen(v => !v)}
-            className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 text-[10px] font-bold uppercase tracking-wider transition-colors ${
-              isMoreMenuOpen || ['forge','nutrition','habits','logbook','achievements','settings'].includes(activeTab)
-                ? (isYasminMode ? 'text-purple-400' : 'text-cyan-400')
-                : (isYasminMode ? 'text-purple-300/40 hover:text-purple-300/70' : 'text-zinc-600 hover:text-zinc-400')
-            }`}
+            className="flex-1 flex flex-col items-center justify-center gap-1 py-2 transition-all duration-150"
           >
-            <Menu className="w-5 h-5" />
-            More
+            {(() => {
+              const isActive = isMoreMenuOpen || ['forge','nutrition','habits','logbook','achievements','settings'].includes(activeTab);
+              return (<>
+                <span className={isActive ? (isYasminMode ? 'text-purple-400' : 'text-[#00D4FF]') : 'text-white/30'}>
+                  <Menu className="w-[18px] h-[18px]" />
+                </span>
+                <span className={`text-[9px] font-semibold tracking-wider ${isActive ? 'text-white/70' : 'text-white/20'}`}>Meer</span>
+                {isActive && <div className={`w-1 h-1 rounded-full ${isYasminMode ? 'bg-purple-400' : 'bg-[#00D4FF]'}`} />}
+              </>);
+            })()}
           </button>
         </div>
       </div>
@@ -1233,128 +1267,128 @@ export default function App() {
       {/* MORE OVERFLOW SHEET */}
       {isMoreMenuOpen && (
         <>
-          <div className="lg:hidden fixed inset-0 z-[55] bg-black/50 backdrop-blur-sm" onClick={() => setIsMoreMenuOpen(false)} />
-          <div className={`lg:hidden fixed bottom-16 left-0 right-0 z-[56] border-t rounded-t-3xl shadow-2xl transition-colors duration-300 pb-safe-bottom ${isYasminMode ? 'bg-[#1a0b2e] border-purple-900/40' : 'bg-zinc-900 border-zinc-800'}`}>
-            <div className="flex items-center justify-between px-6 pt-4 pb-2">
-              <span className={`text-xs font-black uppercase tracking-widest ${isYasminMode ? 'text-purple-400/70' : 'text-zinc-500'}`}>More</span>
-              <button onClick={() => setIsMoreMenuOpen(false)} className={`p-1.5 rounded-lg ${isYasminMode ? 'text-purple-400 hover:bg-purple-900/30' : 'text-zinc-500 hover:bg-zinc-800'}`}>
+          <div className="lg:hidden fixed inset-0 z-[55] bg-black/60" style={{ backdropFilter: 'blur(4px)' }} onClick={() => setIsMoreMenuOpen(false)} />
+          <div className={`lg:hidden fixed bottom-14 left-0 right-0 z-[56] border-t rounded-t-2xl pb-safe-bottom ${isYasminMode ? 'bg-[#0d0010] border-white/[0.06]' : 'bg-[#0a0a0a] border-white/[0.06]'}`}>
+            <div className="flex items-center justify-between px-5 pt-4 pb-3">
+              <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/30">Meer</span>
+              <button onClick={() => setIsMoreMenuOpen(false)} className="p-1.5 rounded-lg text-white/30 hover:text-white/60 hover:bg-white/[0.04] transition-all duration-150">
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <div className="grid grid-cols-3 gap-2 px-4 pb-5 pt-1">
+            <div className="grid grid-cols-3 gap-2 px-4 pb-5">
               {[
-                { id: 'forge',        icon: <Dumbbell className="w-6 h-6" />,     label: 'Forge'        },
-                { id: 'nutrition',    icon: <PieChart className="w-6 h-6" />,      label: 'Nutrition'    },
-                { id: 'habits',       icon: <CheckCircle2 className="w-6 h-6" />,  label: 'Habits'       },
-                { id: 'logbook',      icon: <BookMarked className="w-6 h-6" />,    label: 'Logbook'      },
-                { id: 'achievements', icon: <Medal className="w-6 h-6" />,         label: 'Achievements' },
-                { id: 'settings',     icon: <SettingsIcon className="w-6 h-6" />,      label: 'Settings'     },
-              ].map(({ id, icon, label }) => (
-                <button
-                  key={id}
-                  onClick={() => { setActiveTab(id); setIsMoreMenuOpen(false); }}
-                  className={`flex flex-col items-center justify-center gap-2 py-4 rounded-2xl font-bold text-[10px] uppercase tracking-wider transition-all ${
-                    activeTab === id
-                      ? (isYasminMode ? 'bg-purple-500/20 text-purple-400' : 'bg-cyan-500/10 text-cyan-400')
-                      : (isYasminMode ? 'bg-[#2d1b4e]/60 text-purple-300/70 hover:bg-[#2d1b4e] hover:text-purple-200' : 'bg-zinc-800/60 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200')
-                  }`}
-                >
-                  {icon}
-                  {label}
-                </button>
-              ))}
+                { id: 'forge',     icon: <Dumbbell className="w-5 h-5" />,     label: 'Forge'     },
+                { id: 'nutrition', icon: <PieChart className="w-5 h-5" />,     label: 'Nutrition' },
+                { id: 'habits',    icon: <CheckCircle2 className="w-5 h-5" />, label: 'Habits'    },
+                { id: 'logbook',   icon: <BookMarked className="w-5 h-5" />,   label: 'Logbook'   },
+                { id: 'settings',  icon: <SettingsIcon className="w-5 h-5" />, label: 'Settings'  },
+              ].map(({ id, icon, label }) => {
+                const isActive = activeTab === id;
+                return (
+                  <button
+                    key={id}
+                    onClick={() => { setActiveTab(id); setIsMoreMenuOpen(false); }}
+                    className={`flex flex-col items-center justify-center gap-2 py-4 rounded-xl text-[10px] font-semibold tracking-wider transition-all duration-150 border ${
+                      isActive
+                        ? (isYasminMode ? 'bg-white/10 text-purple-400 border-white/10' : 'bg-white/10 text-[#00D4FF] border-white/10')
+                        : 'text-white/40 border-white/[0.04] bg-white/[0.02] hover:bg-white/[0.06] hover:text-white/70'
+                    }`}
+                  >
+                    {icon}
+                    {label}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </>
       )}
 
-      {/* MODAL / POPUP VOOR AGENDAPUNTEN */}
+      {/* EVENT DETAIL MODAL */}
       {selectedEvent && (
-        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in" onClick={() => setSelectedEvent(null)}>
-          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl relative" onClick={e => e.stopPropagation()}>
-            <button onClick={() => setSelectedEvent(null)} className="absolute top-4 right-4 p-2 text-zinc-500 hover:text-white transition-colors bg-zinc-800 rounded-full hover:bg-zinc-700">
+        <div className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4 animate-in fade-in duration-150" style={{ backdropFilter: 'blur(8px)' }} onClick={() => setSelectedEvent(null)}>
+          <div className="bg-[#0f0f0f] border border-white/[0.08] rounded-2xl p-6 max-w-md w-full relative" onClick={e => e.stopPropagation()}>
+            <button onClick={() => setSelectedEvent(null)} className="absolute top-4 right-4 p-1.5 rounded-lg text-white/40 hover:text-white hover:bg-white/[0.06] transition-all duration-150">
               <X className="w-4 h-4"/>
             </button>
-            
-            <div className="flex items-center gap-2 mb-6">
-              <div className={`w-3 h-3 rounded-full ${getEventColor(selectedEvent.type)}`}></div>
-              <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">{selectedEvent.type}</span>
+
+            <div className="flex items-center gap-2 mb-4">
+              <div className={`w-2 h-2 rounded-full ${getEventColor(selectedEvent.type)}`} />
+              <span className="text-[10px] font-bold text-white/40 uppercase tracking-[0.1em]">{selectedEvent.type}</span>
             </div>
-            
-            <h3 className={`text-2xl font-bold mb-2 leading-tight ${selectedEvent.completed ? 'text-emerald-400 line-through decoration-emerald-500/50' : 'text-white'}`}>
+
+            <h3 className={`text-xl font-bold mb-1 leading-tight ${selectedEvent.completed ? 'text-emerald-400 line-through' : 'text-white'}`}>
               {selectedEvent.title}
             </h3>
-            
-            <div className="flex flex-wrap items-center gap-4 text-sm text-zinc-400 mb-6 font-medium">
-              <span className="flex items-center gap-1.5"><CalendarDays className="w-4 h-4 text-cyan-400"/> {selectedEvent.date}</span>
-              <span className="flex items-center gap-1.5"><Clock className="w-4 h-4 text-emerald-400"/> {selectedEvent.time}</span>
+
+            <div className="flex flex-wrap items-center gap-3 text-xs text-white/40 mb-5 mt-2">
+              <span className="flex items-center gap-1.5"><CalendarDays className="w-3.5 h-3.5" /> {selectedEvent.date}</span>
+              {selectedEvent.time && <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> {selectedEvent.time}</span>}
             </div>
-            
-            {selectedEvent.location && !selectedEvent.completed && (
+
+            {selectedEvent.location && (
               <div className="mb-4">
-                <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-2">Locatie / Link</h4>
-                <p className="text-zinc-200 text-sm flex items-start gap-2 bg-zinc-950/50 p-3 rounded-xl border border-zinc-800/50 break-all">
-                  <MapPin className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5"/> {selectedEvent.location}
+                <p className="text-[10px] font-bold text-white/30 uppercase tracking-wider mb-1.5">Locatie</p>
+                <p className="text-sm text-white/70 flex items-start gap-2 bg-white/[0.03] p-3 rounded-lg border border-white/[0.06] break-all">
+                  <MapPin className="w-3.5 h-3.5 text-[#00D4FF] shrink-0 mt-0.5" /> {selectedEvent.location}
                 </p>
               </div>
             )}
-            
+
             {selectedEvent.description && (
-              <div className="mb-6">
-                <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-2">Notities</h4>
-                <div className="text-zinc-300 text-sm whitespace-pre-wrap bg-zinc-950/50 p-4 rounded-xl border border-zinc-800/50 max-h-48 overflow-y-auto custom-scrollbar">
+              <div className="mb-5">
+                <p className="text-[10px] font-bold text-white/30 uppercase tracking-wider mb-1.5">Notities</p>
+                <div className="text-sm text-white/60 whitespace-pre-wrap bg-white/[0.03] p-3 rounded-lg border border-white/[0.06] max-h-40 overflow-y-auto custom-scrollbar">
                   {selectedEvent.description}
                 </div>
               </div>
             )}
-            
+
             {!selectedEvent.location && !selectedEvent.description && (
-              <div className="bg-zinc-950/50 p-4 rounded-xl border border-zinc-800/50 mb-6">
-                <p className="text-zinc-500 text-sm italic">Geen extra details (locatie of notities) beschikbaar voor deze afspraak.</p>
-              </div>
+              <p className="text-sm text-white/30 italic mb-5">Geen extra details beschikbaar.</p>
             )}
-            
-            <div className="flex justify-between items-center pt-4 border-t border-zinc-800/50 mt-4">
-               <button onClick={(e) => { toggleAgendaEventCompleted(selectedEvent.id, e); setSelectedEvent({...selectedEvent, completed: !selectedEvent.completed}); }} className={`text-sm font-bold flex items-center gap-2 py-2 px-4 rounded-xl transition-colors ${selectedEvent.completed ? 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'}`}>
-                 {selectedEvent.completed ? <><CheckCircle2 className="w-4 h-4"/> Voltooid</> : <><Circle className="w-4 h-4"/> Afvinken</>}
-               </button>
-               <button onClick={() => { handleDeleteAgendaEvent(selectedEvent.id); setSelectedEvent(null); }} className="text-xs font-bold text-rose-400 hover:text-rose-300 flex items-center gap-1.5 py-2 px-3 rounded-lg hover:bg-rose-500/10 transition-colors">
-                 <Trash2 className="w-4 h-4"/> Verwijderen
-               </button>
+
+            <div className="flex items-center justify-between pt-4 border-t border-white/[0.06]">
+              <button onClick={(e) => { toggleAgendaEventCompleted(selectedEvent.id, e); setSelectedEvent({...selectedEvent, completed: !selectedEvent.completed}); }} className={`text-sm font-semibold flex items-center gap-2 py-2 px-3 rounded-lg transition-all duration-150 ${selectedEvent.completed ? 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/15' : 'bg-white/[0.06] text-white/70 hover:bg-white/10'}`}>
+                {selectedEvent.completed ? <><CheckCircle2 className="w-4 h-4" /> Voltooid</> : <><Circle className="w-4 h-4" /> Afvinken</>}
+              </button>
+              <button onClick={() => { handleDeleteAgendaEvent(selectedEvent.id); setSelectedEvent(null); }} className="text-xs font-semibold text-rose-400/70 hover:text-rose-400 flex items-center gap-1.5 py-2 px-3 rounded-lg hover:bg-rose-500/10 transition-all duration-150">
+                <Trash2 className="w-3.5 h-3.5" /> Verwijderen
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* MODAL / POPUP VOOR AI SCIENCE ADVICE */}
+      {/* AI RESPONSE MODAL */}
       {aiResponse && (
-        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in" onClick={() => setAiResponse(null)}>
-          <div className={`border rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl relative ${isYasminMode ? 'bg-[#2d1b4e] border-purple-500/50' : 'bg-zinc-900 border-zinc-700'}`} onClick={e => e.stopPropagation()}>
-            <button onClick={() => setAiResponse(null)} className="absolute top-4 right-4 p-2 text-zinc-400 hover:text-white transition-colors bg-zinc-950/50 rounded-full">
-              <X className="w-5 h-5"/>
+        <div className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4 animate-in fade-in duration-150" style={{ backdropFilter: 'blur(8px)' }} onClick={() => setAiResponse(null)}>
+          <div className="bg-[#0f0f0f] border border-white/[0.08] rounded-2xl p-6 max-w-lg w-full relative" onClick={e => e.stopPropagation()}>
+            <button onClick={() => setAiResponse(null)} className="absolute top-4 right-4 p-1.5 rounded-lg text-white/40 hover:text-white hover:bg-white/[0.06] transition-all duration-150">
+              <X className="w-4 h-4" />
             </button>
-            
-            <div className="flex items-center gap-3 mb-6">
-               <div className={`p-3 rounded-2xl ${isYasminMode ? 'bg-[#1a0b2e]' : 'bg-zinc-950'}`}>
-                 <BrainCircuit className={`w-6 h-6 ${isYasminMode ? 'text-purple-400' : 'text-cyan-400'}`} />
-               </div>
-               <div>
-                 <h3 className={`font-black text-xl ${isYasminMode ? 'text-purple-100' : 'text-white'}`}>Apex AI Analyse</h3>
-                 <p className={`text-xs font-bold uppercase tracking-wider ${isYasminMode ? 'text-purple-400/80' : 'text-cyan-500/80'}`}>Science-Based Protocol</p>
-               </div>
-            </div>
-            
-            <div className="mb-6 border-l-4 pl-4 border-zinc-700">
-              <p className="text-sm font-medium text-zinc-400 italic">"{aiResponse.query}"</p>
-            </div>
-            
-            <div className="text-zinc-200 text-sm leading-relaxed space-y-4">
-               {aiResponse.answer.split('\n').map((line, i) => (
-                 <p key={i}>{line.includes('**') ? <strong className={isYasminMode ? 'text-purple-200' : 'text-white'}>{line.replace(/\*\*/g, '')}</strong> : line}</p>
-               ))}
+
+            <div className="flex items-center gap-3 mb-5">
+              <div className={`p-2 rounded-lg ${isYasminMode ? 'bg-purple-500/10' : 'bg-[#00D4FF]/10'}`}>
+                <BrainCircuit className={`w-5 h-5 ${isYasminMode ? 'text-purple-400' : 'text-[#00D4FF]'}`} />
+              </div>
+              <div>
+                <h3 className="font-bold text-white text-base">Apex AI Analyse</h3>
+                <p className={`text-[10px] font-bold uppercase tracking-wider ${isYasminMode ? 'text-purple-400/60' : 'text-[#00D4FF]/60'}`}>Science-Based Protocol</p>
+              </div>
             </div>
 
-            <button onClick={() => setAiResponse(null)} className={`w-full mt-8 py-3 rounded-xl font-bold transition-colors ${isYasminMode ? 'bg-purple-500 hover:bg-purple-400 text-white' : 'bg-cyan-500 hover:bg-cyan-400 text-zinc-950'}`}>
+            <div className={`mb-5 pl-3 border-l-2 ${isYasminMode ? 'border-purple-500/40' : 'border-[#00D4FF]/30'}`}>
+              <p className="text-sm text-white/40 italic">"{aiResponse.query}"</p>
+            </div>
+
+            <div className="text-sm text-white/70 leading-relaxed space-y-3">
+              {aiResponse.answer.split('\n').map((line, i) => (
+                <p key={i}>{line.includes('**') ? <strong className="text-white font-semibold">{line.replace(/\*\*/g, '')}</strong> : line}</p>
+              ))}
+            </div>
+
+            <button onClick={() => setAiResponse(null)} className={`w-full mt-6 py-2.5 rounded-lg text-sm font-semibold transition-all duration-150 ${isYasminMode ? 'bg-purple-500 hover:bg-purple-400 text-white' : 'bg-[#00D4FF] hover:bg-[#00b8d9] text-black'}`}>
               Begrepen
             </button>
           </div>

@@ -1,44 +1,41 @@
 import React from 'react';
-import { Medal, Award, Trophy, Target, Activity } from 'lucide-react';
+import { Trophy, Target, Activity, Lock } from 'lucide-react';
+
+const locked = [
+  { icon: <Trophy className="w-5 h-5 text-yellow-400/50" />, title: 'Iron Will', desc: 'Train 7 dagen achter elkaar.' },
+  { icon: <Target className="w-5 h-5 text-[#00D4FF]/50" />,  title: 'Goal Crusher', desc: 'Voltooi je eerste grote project.' },
+  { icon: <Activity className="w-5 h-5 text-emerald-400/50" />, title: 'Early Bird', desc: 'Start 5 dagen The Forge voor 08:00.' },
+];
 
 export default function Achievements() {
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <h2 className="text-3xl font-bold text-zinc-100 flex items-center gap-3">
-        <Medal className="text-yellow-400" /> Achievements
-      </h2>
-      <div className="bg-zinc-900 rounded-3xl p-10 border border-zinc-800 text-center shadow-xl mb-8 relative overflow-hidden">
-        <div className="absolute -top-10 -right-10 opacity-5 pointer-events-none">
-          <Award className="w-64 h-64 text-yellow-400" />
-        </div>
-        <div className="relative z-10">
-          <Award className="w-16 h-16 text-zinc-600 mx-auto mb-4" />
-          <h3 className="text-2xl font-bold text-zinc-300 mb-2">Hall of Fame</h3>
-          <p className="text-zinc-500 max-w-md mx-auto">Deze sectie is momenteel in aanbouw. Binnenkort vind je hier al je behaalde prestaties, streaks en mijlpalen verzameld door de AI.</p>
-        </div>
+    <div className="space-y-5 animate-in fade-in duration-200">
+      <div>
+        <h2 className="text-2xl font-black text-white tracking-tight">Achievements</h2>
+        <p className="text-sm text-white/40 mt-0.5">Unlock prestaties door consistent te zijn.</p>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 flex items-center gap-4 opacity-50 grayscale">
-          <div className="bg-yellow-500/20 p-3 rounded-full"><Trophy className="w-8 h-8 text-yellow-500" /></div>
-          <div>
-            <h4 className="font-bold text-zinc-300">Iron Will</h4>
-            <p className="text-xs text-zinc-500">Train 7 dagen achter elkaar.</p>
+
+      <div className="rounded-xl border border-white/[0.06] bg-[#0a0a0a] p-8 text-center mb-2">
+        <Trophy className="w-8 h-8 text-white/10 mx-auto mb-3" />
+        <h3 className="font-bold text-white/40 text-base mb-1">Hall of Fame</h3>
+        <p className="text-sm text-white/25 max-w-sm mx-auto">Binnenkort vind je hier al je behaalde prestaties, streaks en mijlpalen.</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        {locked.map((a, i) => (
+          <div key={i} className="rounded-xl border border-white/[0.06] bg-[#0a0a0a] p-5 flex items-center gap-4 opacity-40">
+            <div className="w-10 h-10 rounded-lg bg-white/[0.04] border border-white/[0.06] flex items-center justify-center shrink-0">
+              {a.icon}
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 mb-0.5">
+                <Lock className="w-3 h-3 text-white/25" />
+                <h4 className="font-bold text-white/60 text-sm">{a.title}</h4>
+              </div>
+              <p className="text-xs text-white/30">{a.desc}</p>
+            </div>
           </div>
-        </div>
-        <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 flex items-center gap-4 opacity-50 grayscale">
-          <div className="bg-cyan-500/20 p-3 rounded-full"><Target className="w-8 h-8 text-cyan-500" /></div>
-          <div>
-            <h4 className="font-bold text-zinc-300">Goal Crusher</h4>
-            <p className="text-xs text-zinc-500">Voltooi je eerste grote project.</p>
-          </div>
-        </div>
-        <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 flex items-center gap-4 opacity-50 grayscale">
-          <div className="bg-emerald-500/20 p-3 rounded-full"><Activity className="w-8 h-8 text-emerald-500" /></div>
-          <div>
-            <h4 className="font-bold text-zinc-300">Early Bird</h4>
-            <p className="text-xs text-zinc-500">Start 5 dagen The Forge voor 08:00.</p>
-          </div>
-        </div>
+        ))}
       </div>
     </div>
   );
