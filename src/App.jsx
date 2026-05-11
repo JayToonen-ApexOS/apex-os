@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useFirestoreCollection } from './hooks/useFirestoreCollection';
-import { useFirestoreDocument } from './hooks/useFirestoreDocument';
 import { useAuth } from './hooks/useAuth';
 import LoginScreen from './components/LoginScreen';
 import Hub from './components/Hub';
@@ -145,29 +144,41 @@ export default function App() {
   const [projects, setProjects] = useFirestoreCollection(uid ? `users/${uid}/projects` : null, initialProjects);
   const [habits, setHabits] = useFirestoreCollection(uid ? `users/${uid}/habits` : null, initialHabits);
   const [goals, setGoals] = useFirestoreCollection(uid ? `users/${uid}/goals` : null, initialGoals);
-  const [uiSettings, setUiSettings] = useFirestoreDocument(uid ? `users/${uid}/settings/ui` : null, { isYasminMode: false, scratchpad: '' });
-  const isYasminMode = uiSettings.isYasminMode ?? false;
-  const setIsYasminMode = (v) => setUiSettings(p => ({ ...p, isYasminMode: v }));
-  const scratchpad = uiSettings.scratchpad ?? '';
-  const setScratchpad = (v) => setUiSettings(p => ({ ...p, scratchpad: typeof v === 'function' ? v(p.scratchpad) : v }));
+  const [isYasminMode, setIsYasminMode] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('isYasminMode')) ?? false; } catch { return false; }
+  });
+  useEffect(() => { localStorage.setItem('isYasminMode', JSON.stringify(isYasminMode)); }, [isYasminMode]);
+
+  const [scratchpad, setScratchpadState] = useState(() => localStorage.getItem('scratchpad') ?? '');
+  useEffect(() => { localStorage.setItem('scratchpad', scratchpad); }, [scratchpad]);
+  const setScratchpad = (v) => setScratchpadState(prev => typeof v === 'function' ? v(prev) : v);
   
   // Logbook State
   const [logs, setLogs] = useFirestoreCollection(uid ? `users/${uid}/logs` : null, initialLogs);
   const [newLogText, setNewLogText] = useState('');
   const [newLogMood, setNewLogMood] = useState('good');
 
-  // Forge / Health State — persisted to Firestore
-  const [forgeSettings, setForgeSettings] = useFirestoreDocument(uid ? `users/${uid}/settings/forge` : null, { weight: '75', height: '180', trainingGoal: 'Spieropbouw (Bulk)', workoutSplit: 'Push / Pull / Legs', trainingDaysPerWeek: 3, autoScheduleTrainings: true });
-  const healthStats = { weight: forgeSettings.weight ?? '75', height: forgeSettings.height ?? '180' };
-  const setHealthStats = (v) => setForgeSettings(p => ({ ...p, ...(typeof v === 'function' ? v(p) : v) }));
-  const trainingGoal = forgeSettings.trainingGoal ?? 'Spieropbouw (Bulk)';
-  const setTrainingGoal = (v) => setForgeSettings(p => ({ ...p, trainingGoal: v }));
-  const workoutSplit = forgeSettings.workoutSplit ?? 'Push / Pull / Legs';
-  const setWorkoutSplit = (v) => setForgeSettings(p => ({ ...p, workoutSplit: v }));
-  const trainingDaysPerWeek = forgeSettings.trainingDaysPerWeek ?? 3;
-  const setTrainingDaysPerWeek = (v) => setForgeSettings(p => ({ ...p, trainingDaysPerWeek: v }));
-  const autoScheduleTrainings = forgeSettings.autoScheduleTrainings ?? true;
-  const setAutoScheduleTrainings = (v) => setForgeSettings(p => ({ ...p, autoScheduleTrainings: v }));
+  // Forge / Health State — persisted to localStorage
+  const [healthStats, setHealthStats] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('healthStats')) ?? { weight: '75', height: '180' }; } catch { return { weight: '75', height: '180' }; }
+  });
+  useEffect(() => { localStorage.setItem('healthStats', JSON.stringify(healthStats)); }, [healthStats]);
+
+  const [trainingGoal, setTrainingGoal] = useState(() => localStorage.getItem('trainingGoal') ?? 'Spieropbouw (Bulk)');
+  useEffect(() => { localStorage.setItem('trainingGoal', trainingGoal); }, [trainingGoal]);
+
+  const [workoutSplit, setWorkoutSplit] = useState(() => localStorage.getItem('workoutSplit') ?? 'Push / Pull / Legs');
+  useEffect(() => { localStorage.setItem('workoutSplit', workoutSplit); }, [workoutSplit]);
+
+  const [trainingDaysPerWeek, setTrainingDaysPerWeek] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('trainingDaysPerWeek')) ?? 3; } catch { return 3; }
+  });
+  useEffect(() => { localStorage.setItem('trainingDaysPerWeek', JSON.stringify(trainingDaysPerWeek)); }, [trainingDaysPerWeek]);
+
+  const [autoScheduleTrainings, setAutoScheduleTrainings] = useState(() => {
+    try { const v = localStorage.getItem('autoScheduleTrainings'); return v === null ? true : JSON.parse(v); } catch { return true; }
+  });
+  useEffect(() => { localStorage.setItem('autoScheduleTrainings', JSON.stringify(autoScheduleTrainings)); }, [autoScheduleTrainings]);
   const [currentSession, setCurrentSession] = useState('');
   
   // Nutrition State
@@ -219,11 +230,16 @@ export default function App() {
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
-  const [agendaSettings, setAgendaSettings] = useFirestoreDocument(uid ? `users/${uid}/settings/agenda` : null, { connectedAgendas: { Google: false, Apple: false, Outlook: false, 'Andere Agenda': false }, agendaUrls: { Apple: '', 'Andere Agenda': '' } });
-  const connectedAgendas = agendaSettings.connectedAgendas ?? { Google: false, Apple: false, Outlook: false, 'Andere Agenda': false };
-  const setConnectedAgendas = (v) => setAgendaSettings(p => ({ ...p, connectedAgendas: typeof v === 'function' ? v(p.connectedAgendas) : v }));
-  const agendaUrls = agendaSettings.agendaUrls ?? { Apple: '', 'Andere Agenda': '' };
-  const setAgendaUrls = (v) => setAgendaSettings(p => ({ ...p, agendaUrls: typeof v === 'function' ? v(p.agendaUrls) : v }));
+  // Agenda settings — persisted to localStorage
+  const [connectedAgendas, setConnectedAgendas] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('connectedAgendas')) ?? { Google: false, Apple: false, Outlook: false, 'Andere Agenda': false }; } catch { return { Google: false, Apple: false, Outlook: false, 'Andere Agenda': false }; }
+  });
+  useEffect(() => { localStorage.setItem('connectedAgendas', JSON.stringify(connectedAgendas)); }, [connectedAgendas]);
+
+  const [agendaUrls, setAgendaUrls] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('agendaUrls')) ?? { Apple: '', 'Andere Agenda': '' }; } catch { return { Apple: '', 'Andere Agenda': '' }; }
+  });
+  useEffect(() => { localStorage.setItem('agendaUrls', JSON.stringify(agendaUrls)); }, [agendaUrls]);
   const [isConnecting, setIsConnecting] = useState(null);
 
   // Init Data & Live Klok
